@@ -1,0 +1,67 @@
+/* 기획서 7.2 디자인 토큰 */
+:root {
+  /* 배경 — 무채색 4단 */
+  --bg-base: #0a0b0d;
+  --bg-surface: #131519;
+  --bg-raised: #1c1f25;
+  --bg-overlay: #262a32;
+
+  /* 텍스트 */
+  --fg-primary: #f2f4f7;
+  --fg-secondary: #9ba3af;
+  --fg-tertiary: #5f6672;
+
+  /* 경계 */
+  --border: #23272e;
+  --border-strong: #343943;
+
+  /* 컴파운드 — 데이터 영역 전용. 팀 컬러 진입 금지 */
+  --c-soft: #da291c;
+  --c-medium: #ffd12e;
+  --c-hard: #f0f0ec;
+  --c-inter: #43b02a;
+  --c-wet: #0067ad;
+  --c-outline: var(--bg-base);
+
+  /* 팀 테마 — 정체성 영역 전용. theme.js 가 런타임 주입 */
+  --team: #00a19c;
+  --team-accent: #27f4d2;
+  --team-secondary: #111820;
+  --team-on: #0a0b0d;
+  --team-cta: #00a19c;   /* 텍스트를 얹는 면 전용. 대비 4.5:1 보장 */
+  --team-data: #00a19c;
+
+  /* 의미색 */
+  --ok: #3fb950;
+  --warn: #d29922;
+  --danger: #f85149;
+
+  /* 타이포 */
+  --font-display: 'Barlow Condensed', 'Noto Sans KR', system-ui, sans-serif;
+  --font-ui: 'Inter', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  /* 간격 — 4px 그리드 */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+
+  --radius: 8px;
+  --radius-lg: 12px;
+  --max-width: 1440px;
+
+  --panel-w: 340px;
+  --header-h: 60px;
+}
+
+/* 컴파운드 색 조회용 유틸 클래스 */
+.c-SOFT { --compound: var(--c-soft); }
+.c-MEDIUM { --compound: var(--c-medium); }
+.c-HARD { --compound: var(--c-hard); }
+.c-INTER { --compound: var(--c-inter); }
+.c-WET { --compound: var(--c-wet); }

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>APEX Strategy — F1 타이어 전략 시뮬레이터</title>
+<meta name="description" content="F1 타이어 전략을 한국어로 이해하게 만드는 시뮬레이터. 랩 단위 계산, 몬테카를로 승률, 그리고 모든 추천에 대한 근거 설명.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/components.css">
+<link rel="stylesheet" href="styles/responsive.css">
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" id="brandMark" aria-hidden="true">A</div>
+      <div>
+        <div class="brand-name">APEX</div>
+        <div class="brand-sub">전략 연구소</div>
+      </div>
+    </div>
+    <nav class="nav" aria-label="섹션 이동">
+      <a href="#strategy">전략</a>
+      <a href="#builderSection">빌더</a>
+      <a href="#raceview">레이스</a>
+      <a href="#probability">확률</a>
+      <a href="#why">근거</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="eyebrow">레이스 위크엔드 / 의사결정 지원</div>
+    <h1>레이스가 시작되기 전에 전략을 설계하세요.</h1>
+    <p>
+      조건을 입력하면 규정을 충족하는 전략을 랩 단위로 계산해 비교합니다.
+      모든 추천에는 <b>왜 그런 결론이 나왔는지</b>가 한국어 문장으로 함께 표시되며,
+      모델의 한계와 신뢰도도 숨기지 않습니다.
+    </p>
+    <p id="scenarioLine" class="num" style="margin-top:var(--s-3);font-size:12px;color:var(--fg-tertiary)"></p>
+  </section>
+
+  <section class="garage-section" id="garage" style="margin-top:var(--s-5)" aria-label="드라이버와 머신"></section>
+
+  <div class="layout">
+    <aside class="panel" id="panel" aria-label="시나리오 설정"></aside>
+
+    <main class="results">
+      <section id="strategy">
+        <div class="section-head">
+          <h2>추천 전략</h2>
+          <span class="hint">카드를 선택하면 차트와 근거가 그 전략으로 바뀝니다</span>
+        </div>
+        <div id="cards"></div>
+      </section>
+
+      <section id="builderSection">
+        <div class="section-head">
+          <h2>내 전략 빌더</h2>
+          <span class="hint">피트 마커를 드래그하거나 ← → 키로 이동 · 스틴트를 클릭하면 컴파운드 변경</span>
+        </div>
+        <div class="card" id="builder"></div>
+      </section>
+
+      <section id="raceview">
+        <div class="section-head">
+          <h2>랩타임 추이</h2>
+          <span class="hint">마우스를 올리면 랩별 상세</span>
+        </div>
+        <div class="card" id="chart"></div>
+      </section>
+
+      <section id="why">
+        <div class="section-head">
+          <h2 id="explainTitle">이 전략이 나온 이유</h2>
+          <span class="hint">밑줄 친 용어에 마우스를 올리면 설명이 나옵니다</span>
+        </div>
+        <div class="card" id="explain"></div>
+      </section>
+
+      <section id="probability">
+        <div class="section-head">
+          <h2>승률 분포</h2>
+          <span class="hint">세이프티카 변동을 포함한 500회 반복</span>
+        </div>
+        <div class="card" id="dist"></div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="foot">
+    <p>
+      이 시뮬레이터는 공개 정보에 기반한 <b>근사 모델</b>입니다. 팀·드라이버 페이스와 마모 계수는
+      실제 팀 데이터가 아니며, 결과는 예측일 뿐 실제 레이스 결과가 아닙니다.
+    </p>
+    <p>
+      Formula 1, F1 및 관련 상표는 Formula One Licensing BV의 자산이며,
+      본 사이트는 상표권자와 무관한 <b>비공식 팬 프로젝트</b>입니다.
+    </p>
+    <p>콘솔에서 <code class="num">APEX.runSelfTest()</code> 를 실행하면 엔진 검증 결과를 볼 수 있습니다.</p>
+  </footer>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
