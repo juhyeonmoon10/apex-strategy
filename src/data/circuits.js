@@ -19,7 +19,11 @@ export const CIRCUITS = [
   mk({ id: 'monaco',      name: '모나코 그랑프리',      track: '모나코 시가지',      laps: 78, lengthKm: 3.337, baseLap: 74.5,  pitLoss: 19.5, degMultiplier: 0.60, scRate: 0.75, vscRate: 0.45 }),
   mk({ id: 'barcelona',   name: '바르셀로나-카탈루냐 그랑프리', track: '카탈루냐',   laps: 66, lengthKm: 4.657, baseLap: 79.5,  pitLoss: 21.0, degMultiplier: 1.20, scRate: 0.25, vscRate: 0.25 }),
   mk({ id: 'austria',     name: '오스트리아 그랑프리',  track: '레드불링',           laps: 71, lengthKm: 4.318, baseLap: 68.5,  pitLoss: 20.0, degMultiplier: 1.05, scRate: 0.35, vscRate: 0.30 }),
-  mk({ id: 'britain',     name: '영국 그랑프리',        track: '실버스톤 서킷',      laps: 52, lengthKm: 5.891, baseLap: 88.5,  pitLoss: 23.5, degMultiplier: 1.25, scRate: 0.40, vscRate: 0.30 }),
+  // ★ 실버스톤은 OpenF1 실측으로 캘리브레이션됨 (tools/calibrate.py, 2023~2025)
+  //   baseLap  2023 건조 레이스 최속랩 90.275 + 모델 보정 1.47
+  //   pitLoss  (인랩+아웃랩) − 2×정상랩 = 19.9초.  lane_duration(28.75)은 피트레인
+  //            통과 시간이라 손실값이 아니다 — 그대로 쓰면 9초 과대평가된다.
+  mk({ id: 'britain',     name: '영국 그랑프리',        track: '실버스톤 서킷',      laps: 52, lengthKm: 5.891, baseLap: 91.75, pitLoss: 19.9, degMultiplier: 1.25, scRate: 0.40, vscRate: 0.30, calibrated: true }),
   mk({ id: 'belgium',     name: '벨기에 그랑프리',      track: '스파-프랑코샹',      laps: 44, lengthKm: 7.004, baseLap: 108.0, pitLoss: 19.0, degMultiplier: 1.15, scRate: 0.45, vscRate: 0.35 }),
   mk({ id: 'hungary',     name: '헝가리 그랑프리',      track: '헝가로링',           laps: 70, lengthKm: 4.381, baseLap: 78.0,  pitLoss: 20.5, degMultiplier: 1.05, scRate: 0.30, vscRate: 0.25 }),
   mk({ id: 'netherlands', name: '네덜란드 그랑프리',    track: '잔드보르트',         laps: 72, lengthKm: 4.259, baseLap: 73.0,  pitLoss: 20.0, degMultiplier: 1.10, scRate: 0.40, vscRate: 0.30 }),

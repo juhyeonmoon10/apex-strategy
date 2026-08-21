@@ -75,6 +75,23 @@ export function runSelfTest(log = true) {
     return { pass: a === b, detail: `${a.toFixed(6)} vs ${b.toFixed(6)}` };
   });
 
+  // ★ OpenF1 실측 대조 (tools/calibrate.py, 실버스톤 2023 건조 레이스)
+  //   실제 중앙 그린랩 93.115초 / 우승 기록 5117초(SC 포함)
+  //   우리 기본 실행은 SC 없는 조건이므로 52 x 93.1 + 피트 2회 ≈ 4880초가 목표.
+  check('실측 대조: 실버스톤 그린랩이 실제 93.1초의 ±3% 이내', () => {
+    const plan = { id: 't', label: '', stints: [{ compound: 'MEDIUM', laps: 26 }, { compound: 'HARD', laps: 26 }] };
+    const r = simulate(sc, plan, 3, green);
+    const err = Math.abs(r.avgLap - 93.115) / 93.115 * 100;
+    return { pass: err < 3, detail: `모델 ${r.avgLap.toFixed(2)}초 vs 실측 93.115초 (오차 ${err.toFixed(1)}%)` };
+  });
+
+  check('실측 대조: 실버스톤 완주 시간이 4880초의 ±4% 이내', () => {
+    const plan = { id: 't', label: '', stints: [{ compound: 'MEDIUM', laps: 26 }, { compound: 'HARD', laps: 26 }] };
+    const r = simulate(sc, plan, 3, green);
+    const err = Math.abs(r.total - 4880) / 4880 * 100;
+    return { pass: err < 4, detail: `모델 ${r.total.toFixed(0)}초 vs 목표 4880초 (오차 ${err.toFixed(1)}%)` };
+  });
+
   check('랩타임 현실성: 실버스톤 평균 랩이 85~100초', () => {
     const plan = { id: 't', label: '', stints: [{ compound: 'MEDIUM', laps: 26 }, { compound: 'HARD', laps: 26 }] };
     const r = simulate(sc, plan, 3, green);
