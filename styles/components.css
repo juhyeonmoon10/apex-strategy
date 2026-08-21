@@ -327,3 +327,79 @@ img.gs-face {
   .driver-photo-wrap { width: 92px; height: 186px; }
   .garage-section { padding: 0 var(--s-3); }
 }
+
+/* ---------- 레이스 트레이스 + 재생 ---------- */
+.transport {
+  display: flex; align-items: center; gap: var(--s-3);
+  margin-bottom: var(--s-4); flex-wrap: wrap;
+}
+.tp-play {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  background: var(--team-cta); color: var(--team-on);
+  font-size: 13px; line-height: 1;
+  display: grid; place-items: center;
+  transition: filter 150ms ease-out;
+}
+.tp-play:hover { filter: brightness(1.12); }
+.tp-range { flex: 1; min-width: 140px; accent-color: var(--team); height: 24px; }
+.tp-lap {
+  font-size: 13px; font-weight: 600; min-width: 48px; text-align: right;
+  color: var(--fg-primary);
+}
+.tp-speeds { display: flex; gap: 2px; background: var(--bg-raised); padding: 3px; border-radius: 6px; }
+.tp-speeds button {
+  padding: 5px 9px; border-radius: 4px; font-size: 11px;
+  font-family: var(--font-mono); color: var(--fg-tertiary);
+}
+.tp-speeds button[aria-pressed='true'] { background: var(--bg-overlay); color: var(--fg-primary); }
+
+.trace-readout { margin-top: var(--s-4); min-height: 0; }
+.tr-lap { display: flex; align-items: baseline; gap: var(--s-2); margin-bottom: var(--s-2); }
+.tr-lap b { font-size: 20px; }
+.tr-lap span { font-size: 12px; color: var(--fg-tertiary); }
+.tr-sc {
+  margin-left: var(--s-2); padding: 2px 8px; border-radius: 4px;
+  background: var(--warn); color: #0a0b0d;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.06em;
+}
+.tr-rows { display: flex; flex-direction: column; gap: 2px; }
+.tr-row {
+  display: grid; grid-template-columns: 34px 1fr auto 74px;
+  gap: var(--s-3); align-items: center;
+  padding: 5px var(--s-3); border-radius: 5px;
+  background: var(--bg-raised); font-size: 12px;
+}
+.tr-row.mine { background: var(--bg-overlay); border-left: 2px solid var(--team); }
+.tr-pos { color: var(--fg-tertiary); font-size: 11px; }
+.tr-row.mine .tr-pos { color: var(--team); font-weight: 700; }
+.tr-name { color: var(--fg-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tr-tyre { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--fg-tertiary); }
+.tr-tyre i {
+  width: 10px; height: 10px; border-radius: 50%;
+  outline: 1px solid var(--c-outline); outline-offset: -1px;
+}
+.tr-gap { text-align: right; color: var(--fg-primary); }
+
+.crossovers {
+  margin-top: var(--s-4); padding-top: var(--s-4);
+  border-top: 1px solid var(--border);
+}
+.crossovers h4 {
+  font-family: var(--font-ui); font-size: 12px; color: var(--warn);
+  margin-bottom: var(--s-2); letter-spacing: 0.02em;
+}
+.crossovers p { font-size: 13px; color: var(--fg-secondary); line-height: 1.6; padding: 2px 0; }
+.crossover-none {
+  margin-top: var(--s-4); padding-top: var(--s-4);
+  border-top: 1px solid var(--border);
+  font-size: 13px; color: var(--fg-tertiary);
+}
+
+#trace .chart-wrap svg { cursor: ew-resize; }
+
+@media (max-width: 767px) {
+  .tr-row { grid-template-columns: 30px 1fr 62px; }
+  .tr-row .tr-tyre { display: none; }
+  .transport { gap: var(--s-2); }
+  .tp-range { order: 3; flex-basis: 100%; }
+}

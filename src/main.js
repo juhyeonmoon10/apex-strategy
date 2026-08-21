@@ -8,6 +8,8 @@ import { renderLapChart } from './ui/lapChart.js';
 import { renderDistribution } from './ui/distribution.js';
 import { renderExplain, initGlossary } from './ui/explainPanel.js';
 import { renderGarage } from './ui/garage.js';
+import { renderRaceTrace } from './ui/raceTrace.js';
+import { createPlayback, renderTransport } from './ui/playback.js';
 
 import { state, set, subscribe, scenarioOf, scenarioSeed, syncUrl, fromQuery } from './store.js';
 import { simulate } from './engine/simulate.js';
@@ -17,10 +19,24 @@ import { runMonteCarlo } from './engine/monteCarlo.js';
 import { explainPlan } from './engine/explain.js';
 import { runSelfTest } from './engine/selftest.js';
 import { COMPOUND_COLOR } from './engine/params.js';
+import { buildTrace } from './engine/trace.js';
 
 const undoStack = [];
 const redoStack = [];
 let running = false;
+
+// 재생 상태. 전체 재렌더를 피하려고 컨트롤러 참조를 모듈 레벨에 둔다.
+const playback = createPlayback();
+let traceCtl = null;
+let transportCtl = null;
+
+playback.subscribe((lap) => {
+  if (traceCtl) traceCtl.setLap(lap);
+  if (transportCtl) transportCtl.sync(lap);
+});
+playback.onStateChange(() => {
+  transportCtl = renderTransport($('#transport'), playback);
+});
 
 /* ---------- 계산 ---------- */
 
@@ -173,6 +189,21 @@ function render() {
     series[state.selected].emphasis = true;
   }
   renderLapChart($('#chart'), series, sc.circuit.laps);
+
+  // 레이스 트레이스 — 추천 3안 + 내 전략을 같은 기준선 위에 놓는다
+  const entries = state.plans.map((p, i) => ({ plan: p, result: state.results[i] }));
+  if (state.myPlan && state.myResult) entries.push({ plan: state.myPlan, result: state.myResult });
+  const trace = buildTrace(entries);
+
+  playback.setTotal(trace ? trace.totalLaps : 0);
+  traceCtl = renderRaceTrace($('#trace'), {
+    trace,
+    mineColor: dataColor,
+    onScrub: (lap) => playback.seek(lap),
+  });
+  transportCtl = renderTransport($('#transport'), playback);
+  traceCtl.setLap(playback.lap);
+  transportCtl.sync(playback.lap);
 
   renderDistribution($('#dist'), { mc: state.mc, plans: state.plans });
 

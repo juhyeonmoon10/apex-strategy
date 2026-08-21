@@ -6,21 +6,9 @@
 
 import { COMPOUND_KO, TYRE } from './params.js';
 import { fmtGap } from './simulate.js';
+import { eun, eul, gwa } from './josa.js';
 
-/**
- * 한국어 조사 선택. 앞말의 받침 유무로 갈린다.
- * "미디엄를" 같은 문장이 나오면 설명 엔진 전체의 신뢰가 깎인다.
- */
-function josa(word, withFinal, withoutFinal) {
-  const last = word.charCodeAt(word.length - 1);
-  const isHangul = last >= 0xac00 && last <= 0xd7a3;
-  if (!isHangul) return withoutFinal;
-  const hasFinal = (last - 0xac00) % 28 !== 0;
-  return hasFinal ? withFinal : withoutFinal;
-}
-const eul = (w) => w + josa(w, '을', '를');
-const eun = (w) => w + josa(w, '은', '는');
-const gwa = (w) => w + josa(w, '과', '와');
+// 조사 처리는 josa.js 로 분리했다 (trace.js 와 공유)
 
 /**
  * 하나의 전략에 대한 근거 문장 목록.
