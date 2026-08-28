@@ -200,7 +200,82 @@ def main():
   · 드라이버가 타이어를 아껴 타면(리프트&코스트) 마모가 랩타임에
     덜 드러난다. 논문도 이 점을 한계로 지적한다.
 """)
+    report_holdout(clean)
     return 0
+
+
+
+
+# ─────────────────────────────────────────────────────────────
+#  홀드아웃 검증
+#
+#  각 스틴트의 앞 75% 로 학습하고 뒤 25% 를 예측한다.
+#  시간 순서를 지켜야 "미래를 보고 과거를 맞추는" 누수가 없다.
+#
+#  주의: 한 스틴트 안에서는 절대랩과 타이어나이가 완전히 공선적이다
+#        (절대랩 = 시작랩 + 나이 - 1). 그래서 스틴트 하나로는 회귀가 불가능하다.
+#        같은 세션·컴파운드의 여러 스틴트를 모아서 학습해야 공선성이 깨진다.
+# ─────────────────────────────────────────────────────────────
+
+def holdout(rows, min_laps=8):
+    import statistics as st_
+    groups = defaultdict(lambda: defaultdict(list))   # (yr,circ,comp) -> stint_id -> laps
+    for r in rows:
+        sid = (r["session_key"], r["driver_number"], r["stint_number"])
+        groups[(r["year"], r["circuit"], r["compound"])][sid].append(r)
+
+    per_session = defaultdict(list)
+    for (yr, circ, comp), stints in groups.items():
+        train, test = [], []
+        for sid, laps in stints.items():
+            laps.sort(key=lambda r: num(r["lap_number"]))
+            if len(laps) < min_laps:
+                continue
+            cut = int(len(laps) * 0.75)
+            train += laps[:cut]
+            test += laps[cut:]
+        if len(train) < 30 or len(test) < 5:
+            continue
+
+        pts = [(num(r["lap_number"]), num(r["tyre_age"]), num(r["lap_duration"])) for r in train]
+        b1, b2, _ = multireg(pts)
+        if b1 is None:
+            continue
+        n = len(pts)
+        mx1 = sum(p[0] for p in pts) / n
+        mx2 = sum(p[1] for p in pts) / n
+        my = sum(p[2] for p in pts) / n
+
+        errs = []
+        for r in test:
+            pred = my + b1 * (num(r["lap_number"]) - mx1) + b2 * (num(r["tyre_age"]) - mx2)
+            errs.append(abs(num(r["lap_duration"]) - pred))
+        per_session[(yr, circ)] += errs
+
+    return per_session
+
+
+def report_holdout(clean):
+    import statistics as st_
+    ps = holdout(clean)
+    if not ps:
+        return
+    print("\n" + "=" * 70)
+    print("  홀드아웃 검증 — 스틴트 앞 75% 학습 → 뒤 25% 예측")
+    print("=" * 70)
+    print(f"\n  {'경기':<28}{'예측 랩':<10}{'MAE(초)':<11}{'RMSE(초)'}")
+    all_e = []
+    for k in sorted(ps):
+        e = ps[k]
+        all_e += e
+        mae = sum(e) / len(e)
+        rmse = (sum(x * x for x in e) / len(e)) ** 0.5
+        print(f"  {k[0]} {k[1]:<22}{len(e):<10}{mae:<11.3f}{rmse:.3f}")
+    mae = sum(all_e) / len(all_e)
+    rmse = (sum(x * x for x in all_e) / len(all_e)) ** 0.5
+    print(f"\n  {'전체':<28}{len(all_e):<10}{mae:<11.3f}{rmse:.3f}")
+    print(f"\n  · MAE {mae:.3f}초는 랩타임의 약 {mae/90*100:.1f}% 수준이다(90초 랩 기준).")
+    print( "  · 선형 모형이라 클리프(급격한 성능 저하)는 잡지 못한다. 이것이 오차의 주원인이다.")
 
 
 if __name__ == "__main__":
