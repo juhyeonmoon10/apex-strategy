@@ -236,7 +236,7 @@ function renderStep2(root, sc) {
     plans: state.plans, results: state.results,
     windows: getWindows(sc),
     selected: state.myPlan ? -1 : state.selected,
-    totalLaps: sc.circuit.laps, circuit: sc.circuit,
+    totalLaps: sc.circuit.laps, circuit: sc.circuit, team: sc.team,
     onSelect: (i) => set({ selected: i, myPlan: null, myResult: null }, 'select'),
   });
   renderExplainInto(sc);

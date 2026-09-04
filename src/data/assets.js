@@ -105,3 +105,17 @@ export function teamLogo(teamId, w = 96) {
   if (!slug) return null;
   return `${BASE}/c_lfill,w_${w}/q_auto/${VER}/common/f1/${YEAR}/${slug}/${YEAR}${slug}logowhite.webp`;
 }
+
+/** 서킷 코스 지도 (흰 선, 투명 배경) — F1 공식 CDN. 2026 신규 서킷(마드리드)·바쿠는 파일이 없어 null */
+const CIRCUIT_MAP = {
+  australia: 'Australia', china: 'China', japan: 'Japan', bahrain: 'Bahrain', saudi: 'Saudi_Arabia',
+  miami: 'Miami', canada: 'Canada', monaco: 'Monaco', barcelona: 'Spain', austria: 'Austria',
+  britain: 'Great_Britain', belgium: 'Belgium', hungary: 'Hungary', netherlands: 'Netherlands',
+  italy: 'Italy', singapore: 'Singapore', usa: 'USA', mexico: 'Mexico', brazil: 'Brazil',
+  lasvegas: 'Las_Vegas', qatar: 'Qatar', abudhabi: 'Abu_Dhabi',
+};
+export function circuitMap(circuitId) {
+  const key = CIRCUIT_MAP[circuitId];
+  if (!key) return null;
+  return `https://media.formula1.com/image/upload/f_auto/q_auto/v1677244985/content/dam/fom-website/2018-redesign-assets/Circuit%20maps%2016x9/${key}_Circuit.png`;
+}
