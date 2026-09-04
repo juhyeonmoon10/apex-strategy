@@ -7,6 +7,7 @@ import { applyTeamTheme, resolveAccent, textClassFor } from '../ui/theme.js';
 import { renderGarage } from '../ui/garage.js';
 import { renderBuilder } from '../ui/stintBuilder.js';
 import { renderRaceTrace } from '../ui/raceTrace.js';
+import { renderRaceReplay } from '../ui/raceReplay.js';
 import { createPlayback, renderTransport } from '../ui/playback.js';
 import { renderDistribution } from '../ui/distribution.js';
 import { renderExplain, initGlossary } from '../ui/explainPanel.js';
@@ -22,7 +23,6 @@ import { validatePlan } from '../engine/rules.js';
 import { runMonteCarlo } from '../engine/monteCarlo.js';
 import { explainPlan } from '../engine/explain.js';
 import { buildTrace } from '../engine/trace.js';
-import { narrateLap } from '../engine/narrate.js';
 import { runSelfTest } from '../engine/selftest.js';
 import { COMPOUND_KO } from '../engine/params.js';
 import { eun } from '../engine/josa.js';
@@ -37,6 +37,8 @@ let running = false;
 let trace = null;
 let traceCtl = null;
 let transportCtl = null;
+let replayCtl = null;
+let lastIntLap = -1;
 let lastStep = null;                       // 스텝이 바뀔 때만 슬라이드 애니메이션
 let windowsCache = { seed: null, windows: null };   // 피트 윈도우는 시나리오당 한 번만 계산
 const playback = createPlayback();
@@ -299,12 +301,16 @@ function renderStep3(root, sc) {
     h('div.sim-head',
       h('h2.sim-question', `${eun(focusLabel)} 레이스에서 어떻게 움직이나요?`),
       h('div.sim-context', h('span', contextLine(sc)), h('button.btn.btn-ghost.btn-sm', { type: 'button', onclick: () => goStep(2) }, '전략 바꾸기'))),
-    h('div.card',
-      h('div#trace'),
-      h('div#transport'),
-      h('div.race-lower',
-        h('div.trace-readout#readout'),
-        h('div.narration', h('h4', '이 랩에서'), h('p#narration.empty', '▶ 재생을 누르거나 그래프를 끌어보세요')))),
+    // 조사에서 확인한 공통 구조: 헤더 카드 → 트랙 맵 + 타이밍 타워 → 간트 → 로그 (docs/레이스-시뮬레이션-조사.md)
+    h('div.race',
+      h('div.race-head#raceHead'),
+      h('div.race-transport', h('div#transport')),
+      h('div.race-main', h('div.race-map#raceMap'), h('div.race-tower#raceTower')),
+      h('div.race-gantt#raceGantt'),
+      h('div.race-log', h('h4', '레이스 로그'), h('div#raceLog'))),
+    h('details.fold',
+      h('summary', '레이스 트레이스', h('span.hint', '평균 페이스 대비 누적 시간차 — 팀 전략실이 보는 그래프')),
+      h('div.fold-body', h('div#trace'))),
     h('details.fold',
       h('summary', '500회 돌려보면?', h('span.hint', '세이프티카 변동을 포함한 몬테카를로')),
       h('div.fold-body',
@@ -316,30 +322,29 @@ function renderStep3(root, sc) {
       h('button.btn.btn-ghost', { type: 'button', onclick: () => { playback.reset(); goStep(1); } }, '처음으로')));
 
   playback.setTotal(trace ? trace.totalLaps : 0);
+  replayCtl = trace ? renderRaceReplay(
+    { head: $('#raceHead'), map: $('#raceMap'), tower: $('#raceTower'), gantt: $('#raceGantt'), log: $('#raceLog') },
+    { trace, entries, circuit: sc.circuit, focusIdx, mineColor: dataColor }) : null;
   traceCtl = renderRaceTrace($('#trace'), { trace, mineColor: dataColor, onScrub: (lap) => playback.seek(lap) });
-  // 판독부를 카드 하단 좌측으로 이동 (raceTrace 가 내부에 만든 것을 옮긴다)
-  const inner = $('#trace .trace-readout');
-  if (inner) { $('#readout').replaceWith(inner); inner.id = 'readout'; }
   transportCtl = renderTransport($('#transport'), playback);
-  traceCtl.setLap(playback.lap);
-  transportCtl.sync(playback.lap);
-  updateNarration(playback.lap, focusIdx);
+  const v = playback.lap;
+  const lap0 = v == null ? null : Math.floor(v);
+  lastIntLap = lap0;
+  if (replayCtl) replayCtl.set(v);
+  traceCtl.setLap(lap0);
+  transportCtl.sync(lap0);
   renderDistribution($('#dist'), { mc: state.mc, plans: state.plans });
 }
 
-function updateNarration(lap, focusIdx) {
-  const el = $('#narration');
-  if (!el || !trace) return;
-  if (lap == null) { el.className = 'empty'; el.textContent = '▶ 재생을 누르거나 그래프를 끌어보세요'; return; }
-  el.className = '';
-  el.innerHTML = narrateLap(trace, lap, focusIdx);
-}
 
-playback.subscribe((lap) => {
-  if (traceCtl) traceCtl.setLap(lap);
-  if (transportCtl) transportCtl.sync(lap);
-  const focusIdx = state.myPlan ? (trace ? trace.series.length - 1 : 0) : state.selected;
-  updateNarration(lap, focusIdx);
+playback.subscribe((v) => {
+  if (replayCtl) replayCtl.set(v);               // 매 프레임 — 트랙 위 차 위치
+  const lap = v == null ? null : Math.floor(v);
+  if (lap !== lastIntLap) {                       // 랩이 바뀔 때만 — 트레이스·슬라이더
+    lastIntLap = lap;
+    if (traceCtl) traceCtl.setLap(lap);
+    if (transportCtl) transportCtl.sync(lap);
+  }
 });
 playback.onStateChange(() => { if (state.step === 3 && $('#transport')) transportCtl = renderTransport($('#transport'), playback); });
 

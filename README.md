@@ -31,7 +31,7 @@ http://localhost:8124 접속. GitHub Pages에는 이 디렉터리를 그대로 p
 | 파일 | 역할 |
 |---|---|
 | `index.html` | 홈 — 한 문장, 시연 진입, 실측 숫자 3개 |
-| `sim.html` | 시뮬레이터 — **3단계 스텝** (조건 → 전략+근거 → 레이스 재생) |
+| `sim.html` | 시뮬레이터 — **3단계 스텝** (조건 → 전략+근거 → 레이스 리플레이) |
 | `research.html` | 연구 — 데이터·전처리·방법·결과·검증·함정·한계·재현 |
 
 `sim.html?step=2` 처럼 URL로 단계에 직접 진입할 수 있습니다. 조건과 편집한 전략도 URL에
@@ -54,7 +54,7 @@ COMPOUND.runSelfTest()
 
 ```
 index.html · sim.html · research.html
-styles/          tokens · base · components · responsive  (4개)
+styles/          tokens · base · components · board(전략 보드) · race(리플레이) · responsive
 src/
   shell.js       공통 헤더·푸터
   store.js       상태 + URL 직렬화
@@ -66,12 +66,14 @@ src/
     narrate.js     재생 중 "이 랩에서" 문장
     trace.js       레이스 트레이스 + 교차 지점 탐지
     selftest.js    검증 12건
-  data/          circuits · teams · assets · glossary
+  data/          circuits · teams · assets · glossary · trackPaths(서킷 중심선, 자동 생성)
   ui/            DOM 렌더링. engine/ 을 import 하지만 그 반대는 절대 없다
+    raceReplay.js  스텝 3 — 트랙 위 차 · 타이밍 타워 · 스틴트 간트 · 레이스 로그
 tools/
   collect.py     OpenF1 → data/laps.csv (랩·스틴트·날씨 조인)
   analyze.py     마모 다중회귀 + 홀드아웃 검증
   calibrate.py   서킷 파라미터 실측 대조
+  trace_maps.py  F1 공식 서킷 지도(PNG) → 트랙 중심선 좌표 (numpy 필요)
 docs/            기획서, 작업 기록, UI 검수
 ```
 

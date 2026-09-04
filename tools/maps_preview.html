@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>트랙 경로 미리보기</title>
+<style>
+body{margin:0;background:#0a0b0d;color:#ddd;font:13px system-ui;padding:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+figure{margin:0;background:#15181c;border-radius:6px;padding:8px}
+svg{width:100%;height:auto;display:block;background:#0f1114}
+figcaption{margin-top:6px;color:#9aa1ab}
+</style></head><body>
+<h2 style="margin:0 0 12px">tools/trace_maps.py 결과</h2>
+<div class="grid" id="g"></div>
+<script type="module">
+import { TRACK_PATHS, TRACK_VIEW } from '../src/data/trackPaths.js';
+const g = document.getElementById('g');
+for (const [id, pts] of Object.entries(TRACK_PATHS)) {
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0] + ' ' + p[1]).join(' ') + ' Z';
+  const marks = pts.filter((_, i) => i % 24 === 0).map((p, i) => `<circle cx="${p[0]}" cy="${p[1]}" r="6" fill="${i === 0 ? '#ff3b3b' : '#27f4d2'}"/><text x="${p[0] + 8}" y="${p[1] - 8}" fill="#fff" font-size="16">${i * 24}</text>`).join('');
+  g.insertAdjacentHTML('beforeend', `<figure><svg viewBox="0 0 ${TRACK_VIEW[0]} ${TRACK_VIEW[1]}"><path d="${d}" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>${marks}</svg><figcaption>${id} · ${pts.length}점 · 빨간 점 = 결승선, 숫자 = 점 순서</figcaption></figure>`);
+}
+</script></body></html>

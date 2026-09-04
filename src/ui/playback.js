@@ -5,7 +5,7 @@
 
 import { h, mount } from './dom.js';
 
-const SPEEDS = [1, 2, 5];
+const SPEEDS = [1, 2, 5, 10];
 
 export function createPlayback() {
   const subs = new Set();
@@ -27,14 +27,12 @@ export function createPlayback() {
     acc += Math.min(0.25, (t - lastT) / 1000);
     lastT = t;
 
-    const lapsPerSec = 2.2 * speed; // 52랩 ≈ 24초 @1배속
-    const advance = Math.floor(acc * lapsPerSec);
-    if (advance > 0) {
-      acc -= advance / lapsPerSec;
-      lap = Math.min(totalLaps, (lap ?? 0) + advance);
-      emit();
-      if (lap >= totalLaps) { stop(); return; }
-    }
+    // 랩을 소수로 진행시킨다 — 트랙 위 차가 부드럽게 움직이도록. 구독자는 필요하면 내림한다.
+    const lapsPerSec = 1.6 * speed; // 52랩 ≈ 32초 @1배속
+    lap = Math.min(totalLaps, (lap ?? 0) + acc * lapsPerSec);
+    acc = 0;
+    emit();
+    if (lap >= totalLaps) { stop(); return; }
     raf = requestAnimationFrame(tick);
   }
 
@@ -94,7 +92,7 @@ export function createPlayback() {
 
 /** 재생 버튼 · 속도 · 랩 슬라이더 */
 export function renderTransport(root, pb) {
-  const lap = pb.lap ?? 0;
+  const lap = Math.floor(pb.lap ?? 0);
 
   const slider = h('input.tp-range', {
     type: 'range', min: 0, max: Math.max(1, pb.totalLaps), value: lap, step: 1,
@@ -111,12 +109,12 @@ export function renderTransport(root, pb) {
       }, pb.playing ? '❚❚' : '▶'),
       h('button.btn-ghost', { type: 'button', onclick: () => pb.reset() }, '처음으로'),
       slider,
-      h('span.tp-lap.num', pb.lap == null ? '전체' : `L${pb.lap}`),
+      h('span.tp-lap.num', pb.lap == null ? '전체' : `L${lap}`),
       h('div.tp-speeds', { role: 'group', 'aria-label': '재생 속도' },
         SPEEDS.map((v) =>
           h('button', {
             type: 'button',
-            'aria-pressed': pb.speed === v,
+            'aria-pressed': String(pb.speed === v),
             onclick: () => pb.setSpeed(v),
           }, `${v}×`)))),
   );
