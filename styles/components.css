@@ -361,15 +361,9 @@ table.dt tr.hl td { color: var(--fg-0); font-weight: 600; }
 .timeline li.now .k { color: var(--team); font-weight: 700; }
 
 /* ---------- 전략 보드 — 피렐리 "Possible Race Strategies" 재현 ---------- */
-.board {
-  position: relative; overflow: hidden;
-  border-radius: 6px; padding: 26px 30px 26px;
-  background:
-    linear-gradient(112deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 38%),
-    linear-gradient(180deg, #1c1f24 0%, #121417 100%);
-  border: 1px solid #2a2e35;
-  font-family: var(--font-display); text-transform: uppercase;
-}
+.board { position: relative; overflow: hidden; border-radius: 6px; padding: 26px 30px 26px;
+  background: linear-gradient(112deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 38%), linear-gradient(180deg, #1c1f24 0%, #121417 100%);
+  border: 1px solid #2a2e35; font-family: var(--font-ui); }
 .board-head { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 26px; }
 .board-mark { display: flex; flex-direction: column; gap: 3px; padding-top: 4px; }
 .board-mark i { width: 34px; height: 5px; border-radius: 1px; }
@@ -377,14 +371,11 @@ table.dt tr.hl td { color: var(--fg-0); font-weight: 600; }
 .board-mark i:nth-child(2) { background: var(--medium); }
 .board-mark i:nth-child(3) { background: var(--hard); }
 .board-head-text { flex: 1; text-align: center; }
-.board-event { font-size: 13px; font-weight: 600; letter-spacing: 0.32em; color: #c9ced6; }
-.board-title { font-size: 34px; line-height: 1; margin-top: 4px; display: flex; justify-content: center; gap: 12px; align-items: baseline; flex-wrap: wrap; }
-.board-title .outline {
-  font-weight: 800; font-style: italic; color: transparent;
-  -webkit-text-stroke: 1.2px #e8ebef; letter-spacing: 0.06em;
-}
-.board-title .strong { font-weight: 800; font-style: italic; color: #fff; letter-spacing: 0.04em; }
-.board-sub { font-size: 12px; font-weight: 600; letter-spacing: 0.24em; color: #aeb4bd; margin-top: 6px; }
+.board-event { font-size: 14px; font-weight: 600; letter-spacing: 0.04em; color: #c9ced6; }
+.board-title { font-size: 32px; line-height: 1.1; margin-top: 4px; }
+.board-title .outline { display: none; }
+.board-title .strong { font-weight: 800; color: #fff; letter-spacing: -0.01em; }
+.board-sub { font-size: 13px; font-weight: 500; color: #aeb4bd; margin-top: 6px; }
 
 .board-rows { display: flex; flex-direction: column; gap: 22px; }
 .board-row {
@@ -416,48 +407,42 @@ table.dt tr.hl td { color: var(--fg-0); font-weight: 600; }
 .board-overlay { position: absolute; inset: 0; pointer-events: none; }
 .board-tyre { position: absolute; top: 50%; transform: translate(-50%, -50%); line-height: 0; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.7)); }
 .board-tyre.start { left: 25px; }
-.board-window {
-  position: absolute; top: 50%; transform: translate(-100%, -50%);
-  margin-left: -32px; white-space: nowrap;
-  font-size: 15px; font-style: italic; font-weight: 700; letter-spacing: 0.04em;
-}
-.board-window b { font-weight: 800; }
+.board-window { position: absolute; top: 50%; transform: translate(-100%, -50%); margin-left: -32px; white-space: nowrap;
+  font-size: 14px; font-weight: 700; letter-spacing: 0.01em; }
+.board-window b { font-family: var(--font-mono); font-weight: 700; font-size: 15px; }
 .board-window.on-dark { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
 .board-window.on-light { color: #0a0b0d; }
 
-.board-name { text-align: right; line-height: 1; }
-.board-tone { font-size: 24px; font-weight: 800; font-style: italic; color: #fff; letter-spacing: 0.02em; }
-.board-stopper { font-size: 15px; font-weight: 600; font-style: italic; color: #d5d9df; letter-spacing: 0.08em; margin-top: 4px; }
-.board-time { margin-top: 7px; display: flex; justify-content: flex-end; align-items: baseline; gap: 8px; text-transform: none; }
-.board-ko { font-family: var(--font-ui); font-size: 11px; color: var(--fg-2); }
+.board-name { text-align: right; line-height: 1.15; }
+.board-tone { font-size: 21px; font-weight: 800; color: #fff; letter-spacing: -0.01em; }
+.board-stopper { font-size: 14px; font-weight: 600; color: #d5d9df; margin-top: 3px; }
+.board-time { margin-top: 7px; display: flex; justify-content: flex-end; align-items: baseline; gap: 8px; }
+.board-ko { display: none; }
 .board-time b { font-size: 15px; font-weight: 600; color: var(--fg-0); }
 .board-time span.num { font-size: 11px; color: var(--fg-1); }
 .board-time span.best { color: var(--ok); font-weight: 700; }
 .board-end { line-height: 0; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.7)); }
 
-.board-note {
-  margin-top: 26px; text-align: center;
-  font-size: 12px; font-weight: 700; letter-spacing: 0.14em; color: #e8ebef;
-}
+.board-note { margin-top: 26px; text-align: center; font-size: 13px; font-weight: 600; color: #e8ebef; }
 .board-legend { display: flex; justify-content: center; align-items: center; gap: 34px; margin-top: 18px; flex-wrap: wrap; }
 .board-legend-tyres { display: flex; gap: 14px; }
 .board-legend-tyres .tyre-icon { filter: drop-shadow(0 6px 10px rgba(0,0,0,0.7)); }
 .board-legend-text { display: flex; flex-direction: column; gap: 6px; }
-.board-legend-line { font-size: 19px; font-weight: 800; font-style: italic; letter-spacing: 0.05em; line-height: 1; }
+.board-legend-line { font-size: 19px; font-weight: 800; letter-spacing: -0.01em; line-height: 1; }
 .board-legend-line.c-HARD { color: #f2f4f7; }
 .board-legend-line.c-MEDIUM { color: var(--medium); }
 .board-legend-line.c-SOFT { color: var(--soft); }
 .board-legend-line.c-INTER { color: var(--inter); }
 .board-legend-line.c-WET { color: #4fa3e6; }
-.board-legend-line b { font-weight: 800; }
-.board-legend-line small { font-family: var(--font-ui); font-size: 11px; font-style: normal; font-weight: 500; color: var(--fg-2); text-transform: none; letter-spacing: 0; margin-left: 4px; }
-.board-foot { margin-top: 20px; text-align: center; font-family: var(--font-ui); font-size: 11px; color: var(--fg-2); text-transform: none; letter-spacing: 0; }
+.board-legend-line b { font-family: var(--font-mono); font-weight: 700; }
+.board-legend-line small { display: none; }
+.board-foot { margin-top: 20px; text-align: center; font-size: 12px; color: var(--fg-2); }
 .tyre-icon { display: block; }
 
 @media (max-width: 1279px) {
   .board-row { grid-template-columns: minmax(0, 1fr) 160px 56px; }
-  .board-tone { font-size: 20px; }
-  .board-title { font-size: 28px; }
+  .board-tone { font-size: 18px; }
+  .board-title { font-size: 26px; }
 }
 @media (max-width: 767px) {
   .board { padding: 18px 14px; }
@@ -469,8 +454,8 @@ table.dt tr.hl td { color: var(--fg-0); font-weight: 600; }
   .board-tyre.start { left: 20px; }
   .board-tyre .tyre-icon, .board-end .tyre-icon { width: 40px; height: 40px; }
   .board-window { font-size: 12px; margin-left: -26px; }
-  .board-title { font-size: 22px; }
-  .board-event { font-size: 10px; letter-spacing: 0.2em; }
+  .board-title { font-size: 21px; }
+  .board-event { font-size: 12px; }
   .board-legend { gap: 16px; }
   .board-legend-tyres .tyre-icon { width: 64px; height: 64px; }
   .board-legend-line { font-size: 15px; }
@@ -481,3 +466,8 @@ table.dt tr.hl td { color: var(--fg-0); font-weight: 600; }
 .gd-src { font-size: 10px; color: var(--fg-2); margin-top: 6px; letter-spacing: 0.02em; }
 .b-seg-name { font-weight: 800; }
 .b-handle.dragging::before { background: var(--team-accent); }
+
+/* ---------- 숫자 입력 (슬라이더 대체) ---------- */
+.num-field { position: relative; }
+.num-field input { padding-right: 44px; }
+.num-field .unit { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--fg-2); pointer-events: none; }

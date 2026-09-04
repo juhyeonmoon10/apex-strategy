@@ -144,16 +144,29 @@ function contextLine(sc) {
 
 /* ---------- 스텝 1 — 조건 ---------- */
 function renderStep1(root, sc) {
+  const focusId = document.activeElement && document.activeElement.id;
   const drivers = driversOf(state.teamId);
   const sel = (opts, value, onchange) =>
     h('select', { onchange: (e) => onchange(e.target.value) },
       opts.map(([v, l]) => h('option', { value: v, selected: v === value }, l)));
   const field = (label, ctrl) => { const id = 'f' + Math.random().toString(36).slice(2, 7); ctrl.id = id; return h('div.field', h('label', { for: id }, label), ctrl); };
-  const slider = (label, key, min, max, unit) =>
-    h('div.field',
-      h('div.slider-row', h('label', label), h('span.val.num', `${state[key]}${unit}`)),
-      h('input', { type: 'range', min, max, value: state[key], 'aria-label': label,
-        oninput: (e) => { const v = Number(e.target.value); e.target.closest('.field').querySelector('.val').textContent = `${v}${unit}`; set({ [key]: v }, 'scenario'); } }));
+  // 숫자 입력. 키 입력마다 재렌더하면 포커스가 날아가므로 change(확정) 시점에만 반영한다.
+  const numField = (label, key, min, max, unit) => {
+    const id = `in-${key}`;
+    return h('div.field',
+      h('label', { for: id }, label),
+      h('div.num-field',
+        h('input', { id, type: 'number', min, max, step: 1, value: state[key], inputmode: 'numeric',
+          'aria-label': `${label} (${min}~${max}${unit})`,
+          onchange: (e) => {
+            let v = Math.round(Number(e.target.value));
+            if (!Number.isFinite(v)) v = state[key];
+            v = Math.max(min, Math.min(max, v));
+            e.target.value = v;
+            if (v !== state[key]) set({ [key]: v }, 'scenario');
+          } }),
+        h('span.unit', unit)));
+  };
 
   mount(root,
     h('div.sim-head', h('h2.sim-question', '어디서, 누가, 어떤 날씨에 달리나요?')),
@@ -175,18 +188,18 @@ function renderStep1(root, sc) {
           h('label', '노면'),
           h('div.seg', { role: 'group', 'aria-label': '노면' },
             [['dry', '건조'], ['rain', '비'], ['heavy', '폭우']].map(([v, l]) =>
-              h('button', { type: 'button', 'aria-pressed': state.surface === v, onclick: () => set({ surface: v }, 'scenario') }, l)))),
-        slider('노면 온도', 'trackTemp', 10, 60, '°C'),
-        field('스타팅 그리드', h('input', { type: 'number', min: 1, max: 22, value: state.grid,
-          oninput: (e) => set({ grid: Math.max(1, Math.min(22, Number(e.target.value) || 1)) }, 'scenario') })),
+              h('button', { type: 'button', 'aria-pressed': String(state.surface === v), onclick: () => set({ surface: v }, 'scenario') }, l)))),
+        numField('노면 온도', 'trackTemp', 10, 60, '°C'),
+        field('스타팅 그리드', h('input', { type: 'number', min: 1, max: 22, step: 1, value: state.grid, id: 'in-grid',
+          onchange: (e) => { const v = Math.max(1, Math.min(22, Math.round(Number(e.target.value)) || 1)); e.target.value = v; if (v !== state.grid) set({ grid: v }, 'scenario'); } })),
         h('details.adv',
           h('summary', '고급 설정'),
           h('div',
-            slider('기온', 'airTemp', 0, 45, '°C'),
-            slider('습도', 'humidity', 10, 100, '%'),
+            numField('기온', 'airTemp', 0, 45, '°C'),
+            numField('습도', 'humidity', 10, 100, '%'),
             h('div.field', h('label', '예상 트래픽'),
               h('div.seg', [['clean', '없음'], ['light', '적음'], ['medium', '보통'], ['heavy', '많음']].map(([v, l]) =>
-                h('button', { type: 'button', 'aria-pressed': state.traffic === v, onclick: () => set({ traffic: v }, 'scenario') }, l))))))),
+                h('button', { type: 'button', 'aria-pressed': String(state.traffic === v), onclick: () => set({ traffic: v }, 'scenario') }, l))))))),
       h('div#garage')),
     h('div.sim-foot',
       h('span', { style: { fontSize: '13px', color: 'var(--fg-2)' } }, '조건을 바꾸면 오른쪽이 바로 반영됩니다'),
@@ -194,6 +207,7 @@ function renderStep1(root, sc) {
 
   const shown = state.plans[state.selected];
   renderGarage($('#garage'), { scenario: sc, compound: shown ? shown.stints[0].compound : 'MEDIUM', gridPos: state.grid });
+  if (focusId) { const el = document.getElementById(focusId); if (el) el.focus({ preventScroll: true }); }
 }
 
 /* ---------- 스텝 2 — 전략 + 근거 ---------- */

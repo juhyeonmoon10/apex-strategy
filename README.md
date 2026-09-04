@@ -144,10 +144,10 @@ EA 페이지는 Hadjar 를 Racing Bulls 소속으로 표기하지만, 그러면 
 드라이버·머신·로고는 F1 공식 미디어 CDN을 참조합니다(`src/data/assets.js`). CDN 실패 시 인라인
 SVG 아트로 자동 교체됩니다.
 
-전략 보드의 타이어는 SVG 로 그립니다. 실제 타이어 PNG 를 쓰려면 `assets/tyres/soft.png ·
-medium.png · hard.png · inter.png · wet.png` 를 넣고 `assets.js` 의 `TYRE_IMAGES = true` 로 바꾸세요.
-파일이 없으면 SVG 로 자동 복귀합니다. 이 이미지들은 Formula One의 자산이며, 비영리 학생 프로젝트를
-전제로 원본 CDN을 참조만 하고 재배포하지 않습니다.
+전략 보드·가라지의 타이어는 `assets/tyres/` 의 피렐리 타이어 SVG(위키미디어 공용)를 씁니다 —
+soft·medium·hard(P ZERO 빨강·노랑·흰색), inter·wet(CINTURATO 초록·파랑). `assets.js` 의
+`TYRE_IMAGES` 로 끄면 자체 SVG 아이콘으로 돌아갑니다. F1 CDN 이미지와 피렐리 그래픽은 각 권리자의
+자산이며, 비영리 학생 프로젝트를 전제로 참조합니다.
 
 ## 남은 작업
 
