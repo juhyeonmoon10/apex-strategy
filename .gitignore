@@ -1,3 +1,8 @@
 .claude/
 .DS_Store
 data/laps.csv
+
+# F1 CDN 서킷 지도 원본과 추출 로그 (tools/trace_maps.py 입력)
+tools/maps/*.png
+tools/maps/*.log
+__pycache__/

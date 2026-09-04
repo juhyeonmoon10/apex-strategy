@@ -83,7 +83,7 @@ def zhang_suen(img):
     return img.astype(bool)
 
 
-def prune(skel, n=14):
+def prune(skel, n=8):
     """짧은 가지(스퍼) 제거: 끝점을 n 번 깎는다."""
     img = skel.copy()
     for _ in range(n):
@@ -100,7 +100,7 @@ def prune(skel, n=14):
 def order_points(skel):
     """골격 픽셀을 한 줄로 잇는다.
     지나간 자리 반경 2px 를 방문 처리해 계단 모양의 대각 이웃이 남지 않게 하고,
-    막히면 90px 이내의 가장 가까운 미방문 픽셀로 건너뛴다 (DRS 감지점 등으로 끊긴 곳)."""
+    막히면 140px 이내의 가장 가까운 미방문 픽셀로 건너뛴다 (DRS 감지점 등으로 끊긴 곳)."""
     skel = prune(skel)
     ys, xs = np.nonzero(skel)
     arr = np.stack([ys, xs], axis=1).astype(float)
@@ -120,7 +120,7 @@ def order_points(skel):
         d2 = ((arr - arr[cur]) ** 2).sum(axis=1)
         vis[d2 <= 4.0] = True
         d2[vis] = 1e12
-        near = np.nonzero(d2 <= 8.0)[0]
+        near = np.nonzero(d2 <= 13.0)[0]      # 방문 반경(2px)보다 넓게 — 직선에서도 다음 픽셀이 잡히도록
         if len(near):
             if len(path) >= 2:
                 dirs = arr[near] - arr[cur]
@@ -129,10 +129,17 @@ def order_points(skel):
             else:
                 nxt = int(near[0])
         else:
-            k = int(d2.argmin())
-            d = math.sqrt(d2[k])
-            if d > 90:
+            # 끊긴 곳: 140px 이내의 미방문 픽셀 중 진행 방향 앞쪽(코사인 > 0.3)에서 가장 가까운 것.
+            # 그냥 최근접을 고르면 옆에 붙어 있는 다른 구간으로 새서 짧은 고리로 닫혀 버린다.
+            cand = np.nonzero(d2 <= 140 ** 2)[0]
+            if not len(cand):
                 break
+            dirs = arr[cand] - arr[cur]
+            dist = np.sqrt(d2[cand])
+            cos = (dirs @ vel) / np.maximum(dist, 1e-9) if np.linalg.norm(vel) > 0 else np.ones(len(cand))
+            ahead = cand[cos > 0.3]
+            k = int(ahead[np.sqrt(d2[ahead]).argmin()]) if len(ahead) else int(cand[dist.argmin()])
+            d = math.sqrt(d2[k])
             jumps.append(d)
             nxt = k
         step = arr[nxt] - arr[cur]
@@ -165,16 +172,7 @@ def trace(fn):
     a = np.array(im)
     rgb = a[:, :, :3].copy()
     rgb[a[:, :, 3] < 128] = 0
-    mask = near(rgb, RED) | near(rgb, BLUE) | near(rgb, YELLOW) | near(rgb, MAGENTA)
-    labels, n = components(mask)
-    keep = np.zeros_like(mask)
-    for k in range(1, n + 1):
-        m = labels == k
-        cnt = int(m.sum())
-        ys, xs = np.nonzero(m)
-        bw, bh = xs.max() - xs.min() + 1, ys.max() - ys.min() + 1
-        if cnt >= 3000 or (cnt >= 800 and min(bw, bh) >= 70):
-            keep |= m
+    keep = keep_components(rgb)
     skel = zhang_suen(keep)
     path, jumps, left = order_points(skel)
     P = np.array(path, float)
@@ -214,30 +212,151 @@ def trace(fn):
     ox = (VW - w * s) / 2 - xmin * s; oy = (VH - hgt * s) / 2 - ymin * s
     pts = [[round(float(x * s + ox), 1), round(float(y * s + oy), 1)] for y, x in Q]
     info = dict(pixels=int(skel.sum()), jumps=[round(j) for j in jumps], unvisited=int(left), closure=round(closure), length=round(L))
-    ok = closure < 90 and left < 0.15 * skel.sum() and all(j < 90 for j in jumps)
+    ok = closure < 140 and left < 0.35 * skel.sum() and all(j < 140 for j in jumps)
     return pts, info, ok
 
 
+def dilate(mask, r):
+    m = mask.copy()
+    for _ in range(r):
+        P = np.pad(m, 1)
+        m = m | P[:-2, 1:-1] | P[2:, 1:-1] | P[1:-1, :-2] | P[1:-1, 2:] | P[:-2, :-2] | P[:-2, 2:] | P[2:, :-2] | P[2:, 2:]
+    return m
+
+
+def erode(mask, r):
+    m = mask.copy()
+    for _ in range(r):
+        P = np.pad(m, 1)
+        m = m & P[:-2, 1:-1] & P[2:, 1:-1] & P[1:-1, :-2] & P[1:-1, 2:]
+    return m
+
+
+def keep_components(rgb):
+    """섹터 색 픽셀 중 아주 작은 얼룩만 버린다.
+    "SECTOR n" 글자는 선 *위에* 놓여 그 구간의 선을 대신하므로(선이 끊겨 있음) 버리면 150px 틈이 생긴다.
+    글자 조각을 남겨 두면 걷기가 글자에서 글자로 건너뛰며 그 구간을 잇는다."""
+    mask = near(rgb, RED) | near(rgb, BLUE) | near(rgb, YELLOW)
+    labels, n = components(mask)
+    sizes = np.bincount(labels.ravel())
+    keep = mask & (sizes[labels] >= 40)
+    return keep
+
+
+def trace_contour(fn, R=18):
+    """걷기가 실패한 서킷용 대안: 선을 R px 두껍게 만들어 틈을 메운 뒤 바깥 윤곽을 따라가고,
+    윤곽을 안쪽으로 (R + 선 두께/2) 만큼 밀어 중심선으로 쓴다. 자기 교차 서킷에는 못 쓴다."""
+    from PIL import ImageDraw
+    im = Image.open(fn).convert('RGBA')
+    a = np.array(im)
+    rgb = a[:, :, :3].copy(); rgb[a[:, :, 3] < 128] = 0
+    band = dilate(keep_components(rgb), R)
+    H, W = band.shape
+    # 바깥 배경: 이미지 테두리에서 band 를 피해 번져 나간 영역 (PIL floodfill 이 L 모드에서 동작하지 않아 직접)
+    free = ~band
+    outside = np.zeros_like(band)
+    outside[0, :] = free[0, :]; outside[-1, :] = free[-1, :]; outside[:, 0] = free[:, 0]; outside[:, -1] = free[:, -1]
+    while True:
+        P = np.pad(outside, 1)
+        grown = (outside | P[:-2, 1:-1] | P[2:, 1:-1] | P[1:-1, :-2] | P[1:-1, 2:]) & free
+        if grown.sum() == outside.sum():
+            break
+        outside = grown
+    P = np.pad(outside, 1)
+    touch = P[:-2, 1:-1] | P[2:, 1:-1] | P[1:-1, :-2] | P[1:-1, 2:]
+    boundary = band & touch
+    path, jumps, left = order_points(boundary)
+    Pp = np.array(path, float)
+    # 안쪽으로 밀기: 접선의 법선 중 band 안쪽을 가리키는 쪽
+    n = len(Pp); k = 6
+    out = []
+    for i in range(n):
+        t = Pp[(i + k) % n] - Pp[(i - k) % n]
+        L = np.linalg.norm(t) or 1
+        nrm = np.array([-t[1], t[0]]) / L
+        q = Pp[i] + nrm * 8
+        yy, xx = int(round(q[0])), int(round(q[1]))
+        inside = 0 <= yy < H and 0 <= xx < W and band[yy, xx]
+        d = R + 4
+        out.append(Pp[i] + (nrm if inside else -nrm) * d)
+    return rgb, np.array(out), dict(pixels=int(boundary.sum()), jumps=[round(j) for j in jumps], unvisited=int(left), closure=round(math.dist(path[0], path[-1])), length=0)
+
+
+def finish(rgb, P, info, ok):
+    """방향 맞추기 · 결승선 회전 · 균등 재표집 · 정규화 (walker/contour 공용)"""
+    def colour_at(p, w=6):
+        y, x = int(p[0]), int(p[1])
+        win = rgb[max(0, y - w):y + w + 1, max(0, x - w):x + w + 1].reshape(-1, 3)
+        if not len(win): return None
+        best, bd = None, 1e9
+        for name, c in (('r', RED), ('b', BLUE), ('y', YELLOW)):
+            d = np.abs(win.astype(int) - np.array(c)).sum(axis=1).min()
+            if d < bd: best, bd = name, d
+        return best if bd < 70 else None
+    w = 6 if info.get('length', 1) else 12
+    cols = [colour_at(p, w) for p in P[:: max(1, len(P) // 400)]]
+    cols = [c for c in cols if c]
+    def first_index(c):
+        return cols.index(c) if c in cols else 10 ** 9
+    order = ''.join(sorted('rby', key=first_index))
+    if order not in ('rby', 'byr', 'yrb'):
+        P = P[::-1]
+    step = max(1, len(P) // 600)
+    seq = [(i, colour_at(P[i], w)) for i in range(0, len(P), step)]
+    seq = [(i, c) for i, c in seq if c]
+    start = 0
+    for (i0, c0), (i1, c1) in zip(seq, seq[1:] + seq[:1]):
+        if c0 == 'y' and c1 == 'r':
+            start = i1; break
+    P = np.vstack([P[start:], P[:start]])
+    Q, L = resample(P.tolist(), N_POINTS)
+    ymin, xmin = Q.min(axis=0); ymax, xmax = Q.max(axis=0)
+    wdt, hgt = xmax - xmin, ymax - ymin
+    sc = min((VW * 0.88) / wdt, (VH * 0.88) / hgt)
+    ox = (VW - wdt * sc) / 2 - xmin * sc; oy = (VH - hgt * sc) / 2 - ymin * sc
+    return [[round(float(x * sc + ox), 1), round(float(y * sc + oy), 1)] for y, x in Q]
+
+
+def load_existing():
+    if not os.path.exists(OUT):
+        return {}
+    import re
+    txt = open(OUT, encoding='utf-8').read()
+    return {m.group(1): json.loads(m.group(2)) for m in re.finditer(r'^  (\w+): (\[.*\]),$', txt, re.M)}
+
+
 def main():
-    out = {}
+    only = set(sys.argv[1:])
+    out = load_existing() if only else {}
     for key, cid in KEYS.items():
+        if only and key not in only and cid not in only:
+            continue
         fn = os.path.join(SRC, key + '.png')
         if not os.path.exists(fn):
             print(f'{key:14} (없음)'); continue
         try:
             pts, info, ok = trace(fn)
+            method = 'walk'
+            if not ok:
+                rgb, P, info2 = trace_contour(fn)
+                ok = info2['closure'] < 40 and info2['unvisited'] < 0.05 * info2['pixels'] and all(j < 40 for j in info2['jumps'])
+                if ok:
+                    pts = finish(rgb, P, info2, ok); info = info2; method = 'contour'
         except Exception as e:  # noqa
             print(f'{key:14} 실패: {e}'); continue
-        print(f'{key:14} {"OK " if ok else "X  "} skel={info["pixels"]} jumps={info["jumps"]} unvisited={info["unvisited"]} closure={info["closure"]}')
+        print(f'{key:14} {"OK " if ok else "X  "} {method:7} skel={info["pixels"]} jumps={info["jumps"][:12]} unvisited={info["unvisited"]} closure={info["closure"]}', flush=True)
         if ok:
             out[cid] = pts
+        else:
+            out.pop(cid, None)
+    NL = chr(10)
     with open(OUT, 'w', encoding='utf-8') as f:
-        f.write('// 자동 생성 — tools/trace_maps.py. F1 공식 서킷 지도에서 뽑은 트랙 중심선 (1000×562 좌표, 결승선에서 시작, 주행 방향 순).\n')
-        f.write(f'export const TRACK_VIEW = [{VW}, {VH}];\n')
-        f.write('export const TRACK_PATHS = {\n')
+        f.write('// 자동 생성 — tools/trace_maps.py. F1 공식 서킷 지도에서 뽑은 트랙 중심선 (1000×562 좌표, 결승선에서 시작, 주행 방향 순).' + NL)
+        f.write(f'export const TRACK_VIEW = [{VW}, {VH}];' + NL)
+        f.write('export const TRACK_PATHS = {' + NL)
         for cid, pts in out.items():
-            f.write(f'  {cid}: {json.dumps(pts, separators=(",", ":"))},\n')
-        f.write('};\n')
+            f.write(f'  {cid}: {json.dumps(pts, separators=(",", ":"))},' + NL)
+        f.write('};' + NL)
     print(f'{len(out)}개 서킷 → {OUT}')
 
 
