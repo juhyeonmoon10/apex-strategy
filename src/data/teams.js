@@ -1,11 +1,18 @@
 // 2026 그리드. 팔레트는 v1 에서 추출한 값을 그대로 계승한다 (기획서 부록 B).
 //
-// ⚠ pace / degMultiplier / pitStop 은 상대적 초기값이며 실제 팀 데이터가 아니다.
-//   라인업이 바뀌면 이 파일만 고치면 된다.
+// ── 드라이버 능력치: EA SPORTS F1 25 · 2026 Season Pack DLC (출시 시점 공식 레이팅) ──
+//   출처: EA 공식 발표를 옮긴 Yahoo Sports / ClutchPoints 기사, 두 매체 수치 일치 확인.
+//   EA 6월 업데이트에서 일부 수치가 바뀌었으나(예: Norris 94→92, Antonelli 83→88)
+//   전체 표를 구하지 못해 출시 시점 표를 일관되게 쓴다.
+//   라인업은 6월 업데이트 기준(Hadjar → Red Bull Racing).
 //
-//   pace           랩당 초 (음수 = 빠름)
-//   degMultiplier  타이어 마모 배율 (1 = 평균)
-//   pitStop        정지 시간 (초)
+//   EA 항목 → 엔진 파라미터 매핑 (이 프로젝트의 정의. 게임 내부 공식이 아님)
+//     pace     = (88 − PAC) × 0.03          랩당 초. PAC 96 → −0.24, PAC 72 → +0.48
+//     mgmt     = 1 − (EXP − 80) × 0.0015     경험이 많을수록 타이어를 아낀다고 본다
+//     wetSkill = OVR                          우천 실력의 직접 지표가 없어 종합치로 대체
+//
+// ── 팀(차량) 성능치: EA 가 공개 페이지에 싣지 않아 프로젝트 추정값 유지 ──
+//   pace / degMultiplier / pitStop 은 2025 시즌 상대 전력 기반 근사값.
 
 export const TEAMS = [
   { id: 'mclaren',         name: 'McLaren',          pace: -0.15, degMultiplier: 0.95, pitStop: 2.5, colors: { team: '#FF8000', accent: '#FF8000', secondary: '#FFB15B' } },
@@ -21,32 +28,42 @@ export const TEAMS = [
   { id: 'cadillac',        name: 'Cadillac',         pace:  0.85, degMultiplier: 1.06, pitStop: 3.4, colors: { team: '#B8B8B8', accent: '#C7C9CB', secondary: '#C9A84D' } },
 ];
 
-//  pace       팀 대비 드라이버 델타 (초/랩)
-//  mgmt       타이어 관리 (낮을수록 마모 적음)
-//  wetSkill   우천 실력 0~100
+/** EA 레이팅 → 엔진 파라미터 */
+function fromEA(id, name, teamId, num, ea) {
+  const [ovr, exp, rac, awa, pac] = ea;
+  return {
+    id, name, teamId, num,
+    ea: { ovr, exp, rac, awa, pac },
+    pace: +((88 - pac) * 0.03).toFixed(3),
+    mgmt: +(1 - (exp - 80) * 0.0015).toFixed(4),
+    wetSkill: ovr,
+  };
+}
+
+//                                                          OVR EXP RAC AWA PAC
 export const DRIVERS = [
-  { id: 'norris',    name: 'Lando Norris',      teamId: 'mclaren',         num: 4,  pace: -0.03, mgmt: 0.98, wetSkill: 88 },
-  { id: 'piastri',   name: 'Oscar Piastri',     teamId: 'mclaren',         num: 81, pace:  0.00, mgmt: 0.97, wetSkill: 84 },
-  { id: 'russell',   name: 'George Russell',    teamId: 'mercedes',        num: 63, pace: -0.02, mgmt: 0.98, wetSkill: 86 },
-  { id: 'antonelli', name: 'Kimi Antonelli',    teamId: 'mercedes',        num: 12, pace:  0.06, mgmt: 1.02, wetSkill: 78 },
-  { id: 'verstappen',name: 'Max Verstappen',    teamId: 'red-bull-racing', num: 1,  pace: -0.09, mgmt: 0.95, wetSkill: 96 },
-  { id: 'hadjar',    name: 'Isack Hadjar',      teamId: 'red-bull-racing', num: 6,  pace:  0.10, mgmt: 1.02, wetSkill: 76 },
-  { id: 'leclerc',   name: 'Charles Leclerc',   teamId: 'ferrari',         num: 16, pace: -0.04, mgmt: 1.00, wetSkill: 87 },
-  { id: 'hamilton',  name: 'Lewis Hamilton',    teamId: 'ferrari',         num: 44, pace: -0.01, mgmt: 0.96, wetSkill: 94 },
-  { id: 'albon',     name: 'Alex Albon',        teamId: 'williams',        num: 23, pace: -0.02, mgmt: 0.99, wetSkill: 80 },
-  { id: 'sainz',     name: 'Carlos Sainz',      teamId: 'williams',        num: 55, pace: -0.03, mgmt: 0.98, wetSkill: 83 },
-  { id: 'alonso',    name: 'Fernando Alonso',   teamId: 'aston-martin',    num: 14, pace: -0.05, mgmt: 0.95, wetSkill: 92 },
-  { id: 'stroll',    name: 'Lance Stroll',      teamId: 'aston-martin',    num: 18, pace:  0.12, mgmt: 1.04, wetSkill: 74 },
-  { id: 'lawson',    name: 'Liam Lawson',       teamId: 'racing-bulls',    num: 30, pace:  0.02, mgmt: 1.01, wetSkill: 78 },
-  { id: 'lindblad',  name: 'Arvid Lindblad',    teamId: 'racing-bulls',    num: 41, pace:  0.11, mgmt: 1.03, wetSkill: 72 },
-  { id: 'ocon',      name: 'Esteban Ocon',      teamId: 'haas',            num: 31, pace:  0.01, mgmt: 1.00, wetSkill: 79 },
-  { id: 'bearman',   name: 'Oliver Bearman',    teamId: 'haas',            num: 87, pace:  0.05, mgmt: 1.02, wetSkill: 76 },
-  { id: 'hulkenberg',name: 'Nico Hulkenberg',   teamId: 'audi',            num: 27, pace:  0.00, mgmt: 0.99, wetSkill: 85 },
-  { id: 'bortoleto', name: 'Gabriel Bortoleto', teamId: 'audi',            num: 5,  pace:  0.08, mgmt: 1.03, wetSkill: 74 },
-  { id: 'gasly',     name: 'Pierre Gasly',      teamId: 'alpine',          num: 10, pace: -0.01, mgmt: 1.00, wetSkill: 82 },
-  { id: 'colapinto',  name: 'Franco Colapinto', teamId: 'alpine',          num: 43, pace:  0.09, mgmt: 1.03, wetSkill: 75 },
-  { id: 'perez',     name: 'Sergio Perez',      teamId: 'cadillac',        num: 11, pace: -0.02, mgmt: 0.97, wetSkill: 84 },
-  { id: 'bottas',    name: 'Valtteri Bottas',   teamId: 'cadillac',        num: 77, pace:  0.01, mgmt: 0.98, wetSkill: 83 },
+  fromEA('norris',     'Lando Norris',      'mclaren',         4,  [94, 81, 89, 80, 94]),
+  fromEA('piastri',    'Oscar Piastri',     'mclaren',         81, [91, 77, 95, 81, 92]),
+  fromEA('russell',    'George Russell',    'mercedes',        63, [93, 83, 94, 93, 94]),
+  fromEA('antonelli',  'Kimi Antonelli',    'mercedes',        12, [83, 70, 83, 75, 85]),
+  fromEA('verstappen', 'Max Verstappen',    'red-bull-racing', 1,  [95, 87, 96, 85, 96]),
+  fromEA('hadjar',     'Isack Hadjar',      'red-bull-racing', 6,  [83, 71, 81, 82, 85]),
+  fromEA('leclerc',    'Charles Leclerc',   'ferrari',         16, [92, 83, 92, 91, 93]),
+  fromEA('hamilton',   'Lewis Hamilton',    'ferrari',         44, [91, 98, 93, 91, 89]),
+  fromEA('albon',      'Alex Albon',        'williams',        23, [85, 84, 87, 77, 85]),
+  fromEA('sainz',      'Carlos Sainz',      'williams',        55, [86, 88, 88, 80, 86]),
+  fromEA('alonso',     'Fernando Alonso',   'aston-martin',    14, [90, 99, 90, 81, 87]),
+  fromEA('stroll',     'Lance Stroll',      'aston-martin',    18, [77, 84, 77, 73, 77]),
+  fromEA('lawson',     'Liam Lawson',       'racing-bulls',    30, [79, 73, 79, 71, 81]),
+  fromEA('lindblad',   'Arvid Lindblad',    'racing-bulls',    41, [68, 32, 70, 60, 72]),
+  fromEA('ocon',       'Esteban Ocon',      'haas',            31, [84, 83, 85, 84, 84]),
+  fromEA('bearman',    'Oliver Bearman',    'haas',            87, [83, 72, 88, 70, 83]),
+  fromEA('hulkenberg', 'Nico Hulkenberg',   'audi',            27, [85, 88, 85, 85, 85]),
+  fromEA('bortoleto',  'Gabriel Bortoleto', 'audi',            5,  [80, 69, 81, 77, 81]),
+  fromEA('gasly',      'Pierre Gasly',      'alpine',          10, [84, 83, 83, 78, 85]),
+  fromEA('colapinto',  'Franco Colapinto',  'alpine',          43, [73, 69, 71, 74, 75]),
+  fromEA('perez',      'Sergio Perez',      'cadillac',        11, [85, 92, 83, 81, 85]),
+  fromEA('bottas',     'Valtteri Bottas',   'cadillac',        77, [84, 89, 75, 95, 87]),
 ];
 
 export const teamById = (id) => TEAMS.find((t) => t.id === id) || TEAMS[1];

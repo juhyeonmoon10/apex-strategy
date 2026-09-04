@@ -16,6 +16,15 @@ const YEAR = '2026';
 /** 로컬 파일로 전환하려면 true. assets/cars/{teamId}.webp 등을 읽는다. */
 export const LOCAL_ASSETS = false;
 
+/**
+ * 타이어 이미지. assets/tyres/soft.png · medium.png · hard.png · inter.png · wet.png
+ * 를 넣고 true 로 바꾸면 전략 보드가 SVG 대신 이 파일을 쓴다. 파일이 없으면 SVG 로 자동 복귀.
+ */
+export const TYRE_IMAGES = false;
+export function tyreImage(compound) {
+  return `assets/tyres/${String(compound).toLowerCase()}.png`;
+}
+
 /** F1 CDN 이 쓰는 팀 슬러그 */
 export const TEAM_SLUG = {
   mercedes: 'mercedes',

@@ -20,7 +20,9 @@ function s(tag, attrs = {}, ...kids) {
   return el;
 }
 
-const SERIES_COLORS = ['#F2F4F7', '#9BA3AF', '#5F6672'];
+// 전략별 선 색 — 투명도가 아니라 색상으로 구분한다.
+// 컴파운드 색(빨강·노랑·흰색·초록·파랑)과 겹치지 않는 색만 쓴다.
+const SERIES_COLORS = ['#F2F4F7', '#22C1E8', '#C084FC'];
 
 /**
  * @returns {{setLap:(n:number|null)=>void, totalLaps:number}} 컨트롤러
@@ -106,15 +108,16 @@ export function renderRaceTrace(root, { trace, mineColor, onScrub }) {
   series.forEach((ser) => {
     const color = ser.isMine ? mineColor : SERIES_COLORS[ci++ % SERIES_COLORS.length];
     const d = ser.points.map((p, i) => `${i ? 'L' : 'M'} ${X(p.lap).toFixed(1)} ${Y(p.delta).toFixed(1)}`).join(' ');
+    // 배경 헤일로 — 선이 스틴트 음영·그리드 위에서 또렷하게
+    svg.append(s('path', { d, fill: 'none', stroke: '#0a0b0d', 'stroke-width': ser.isMine ? 5.5 : 4, 'stroke-opacity': 0.7, 'stroke-linejoin': 'round' }));
     svg.append(s('path', {
       d, fill: 'none', stroke: color,
-      'stroke-width': ser.isMine ? 2.8 : 1.8,
-      'stroke-opacity': ser.isMine ? 1 : 0.55,
+      'stroke-width': ser.isMine ? 3 : 2.2,
       'stroke-linejoin': 'round',
     }));
     ser.pitLaps.forEach((lap) => {
       svg.append(s('circle', {
-        cx: X(lap), cy: Y(ser.points[lap].delta), r: ser.isMine ? 4 : 3,
+        cx: X(lap), cy: Y(ser.points[lap].delta), r: ser.isMine ? 4.5 : 3.5,
         fill: '#0a0b0d', stroke: color, 'stroke-width': 2,
       }));
     });
@@ -189,7 +192,9 @@ export function renderRaceTrace(root, { trace, mineColor, onScrub }) {
         snap.map((r) =>
           h('div.tr-row', { class: r.isMine ? 'mine' : '' },
             h('span.tr-pos.num', `P${r.pos}`),
-            h('span.tr-name', r.label),
+            h('span.tr-name',
+              h('i.tr-dot', { style: { background: (series.find((x) => x.label === r.label) || {})._color || 'var(--fg-1)' } }),
+              r.label),
             r.compound
               ? h('span.tr-tyre',
                   h('i', { style: { background: COMPOUND_COLOR[r.compound] } }),

@@ -37,7 +37,17 @@ let running = false;
 let trace = null;
 let traceCtl = null;
 let transportCtl = null;
+let lastStep = null;                       // 스텝이 바뀔 때만 슬라이드 애니메이션
+let windowsCache = { seed: null, windows: null };   // 피트 윈도우는 시나리오당 한 번만 계산
 const playback = createPlayback();
+
+function getWindows(sc) {
+  const seed = scenarioSeed();
+  if (windowsCache.seed !== seed) {
+    windowsCache = { seed, windows: state.plans.map((p) => pitWindows(sc, p, seed)) };
+  }
+  return windowsCache.windows;
+}
 
 /* ---------- 계산 ---------- */
 function green(sc) { return new Array(sc.circuit.laps).fill('green'); }
@@ -188,11 +198,6 @@ function renderStep1(root, sc) {
 
 /* ---------- 스텝 2 — 전략 + 근거 ---------- */
 function renderStep2(root, sc) {
-  const valid = state.results.filter((r) => r && !r.invalid);
-  const best = valid.length ? Math.min(...valid.map((r) => r.total)) : 0;
-  const target = state.myPlan || state.plans[state.selected];
-  const targetRes = state.myPlan ? state.myResult : state.results[state.selected];
-
   mount(root,
     h('div.sim-head',
       h('h2.sim-question', '어떤 전략이 빠르고, 왜 빠른가요?'),
@@ -212,32 +217,59 @@ function renderStep2(root, sc) {
       h('button.btn.btn-ghost', { type: 'button', onclick: () => goStep(1) }, '← 조건'),
       h('button.btn.btn-primary', { type: 'button', onclick: () => goStep(3) }, '레이스 보기 →')));
 
-  // 피렐리식 전략 보드. 윈도우는 피트 랩을 ±5 옮겨 시뮬레이션해 실제로 계산
-  const seed = scenarioSeed();
+  // 피렐리식 전략 보드. 윈도우는 피트 랩을 ±5 옮겨 시뮬레이션해 실제로 계산 (시나리오당 1회 캐시)
   renderStrategyBoard($('#board'), {
     plans: state.plans, results: state.results,
-    windows: state.plans.map((p) => pitWindows(sc, p, seed)),
+    windows: getWindows(sc),
     selected: state.myPlan ? -1 : state.selected,
     totalLaps: sc.circuit.laps, circuit: sc.circuit,
     onSelect: (i) => set({ selected: i, myPlan: null, myResult: null }, 'select'),
   });
+  renderExplainInto(sc);
+  renderBuilderInto(sc);
+}
 
+function renderExplainInto(sc) {
+  const target = state.myPlan || state.plans[state.selected];
+  const targetRes = state.myPlan ? state.myResult : state.results[state.selected];
+  const el = $('#explain');
+  if (!el) return;
   if (target && targetRes && !targetRes.invalid) {
     $('#explainTitle').textContent = state.myPlan ? '내 전략은 왜 이 시간이 나오나' : `왜 ${target.stints.length - 1}스톱인가`;
-    renderExplain($('#explain'), explainPlan(sc, target, targetRes, state.plans, state.results));
-    $('#explain').classList.add('swap');
+    renderExplain(el, explainPlan(sc, target, targetRes, state.plans, state.results));
+    el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap');
+  } else {
+    renderExplain(el, []);
   }
+}
 
-  // 빌더: 내 전략이 없으면 선택된 추천안을 복사해 시작
+function renderBuilderInto(sc) {
+  const root = $('#builder');
+  if (!root) return;
+  // 내 전략이 없으면 선택된 추천안을 복사해 시작
   const builderPlan = state.myPlan || (state.plans[state.selected] && { id: 'my', label: '내 전략', stints: state.plans[state.selected].stints.map((s) => ({ ...s })) });
   const builderRes = state.myPlan ? state.myResult : (builderPlan ? simMine(builderPlan) : null);
   const ref = state.results[0] && !state.results[0].invalid ? state.results[0].total : null;
-  renderBuilder($('#builder'), {
+  renderBuilder(root, {
     plan: builderPlan, totalLaps: sc.circuit.laps, result: builderRes, refTotal: ref, surface: sc.weather.surface,
     validation: builderPlan ? validatePlan(builderPlan, sc) : { legal: true, errors: [], warnings: [] },
+    onPreview: (p) => simMine(p),           // 드래그 중: 총시간만 제자리 갱신, 화면은 그대로
     onChange: (next, opts) => { if (!state.myPlan) { undoStack.length = 0; redoStack.length = 0; } onPlanChange(next, opts); },
     onUndo: undo, onRedo: redo, canUndo: undoStack.length > 0, canRedo: redoStack.length > 0,
   });
+}
+
+/** 전략 편집 커밋 — 보드·스테퍼는 두고 근거·빌더·선택 표시만 갱신 */
+function renderPlanPartial() {
+  const sc = scenarioOf();
+  renderExplainInto(sc);
+  renderBuilderInto(sc);
+  document.querySelectorAll('.board-row').forEach((row, i) => {
+    const on = !state.myPlan && state.selected === i;
+    row.setAttribute('aria-checked', String(on));
+    row.tabIndex = on ? 0 : -1;
+  });
+  syncUrl();
 }
 
 /* ---------- 스텝 3 — 레이스 ---------- */
@@ -304,7 +336,10 @@ function render() {
   renderStepper();
   const root = $('#view');
   root.className = 'sim-view';
-  root.style.animation = 'none'; void root.offsetHeight; root.style.animation = '';
+  if (state.step !== lastStep) {
+    root.style.animation = 'none'; void root.offsetHeight; root.style.animation = '';
+    lastStep = state.step;
+  }
   if (state.step === 1) renderStep1(root, sc);
   else if (state.step === 2) renderStep2(root, sc);
   else renderStep3(root, sc);
@@ -313,7 +348,8 @@ function render() {
 
 const rerender = debounce(render, 30);
 subscribe((reason) => {
-  if (reason === 'scenario') { recompute(); }
+  if (reason === 'scenario') recompute();
+  else if (reason === 'plan' && state.step === 2) renderPlanPartial();
   else rerender();
 });
 

@@ -122,10 +122,28 @@ lapTime(n) = baseLap + 팀페이스 + 드라이버페이스 + 컴파운드델타
 - 팀 컬러 위 텍스트는 상대 휘도 0.179(WCAG 대비식 교차점)로 자동 결정. 텍스트를 얹는 면은
   `--team-cta`로 4.5:1 보장 — **11개 팀 전부 AA 통과**.
 
+## 드라이버 능력치
+
+`src/data/teams.js` 의 드라이버 22명은 **EA SPORTS F1 25 · 2026 Season Pack DLC** 출시 시점 공식
+레이팅(OVR·EXP·RAC·AWA·PAC)을 그대로 싣고, 아래 규칙으로 엔진 파라미터에 매핑합니다.
+
+```
+pace     = (88 − PAC) × 0.03        랩당 초
+mgmt     = 1 − (EXP − 80) × 0.0015  경험 ↑ = 타이어 관리 ↑
+wetSkill = OVR
+```
+
+팀(차량) 성능치는 EA 가 공개 페이지에 싣지 않아 프로젝트 추정값을 유지합니다.
+가라지 카드에 OVR/PAC/RAC/EXP 가 출처와 함께 표시됩니다.
+
 ## 이미지
 
 드라이버·머신·로고는 F1 공식 미디어 CDN을 참조합니다(`src/data/assets.js`). CDN 실패 시 인라인
-SVG 아트로 자동 교체됩니다. 이 이미지들은 Formula One의 자산이며, 비영리 학생 프로젝트를
+SVG 아트로 자동 교체됩니다.
+
+전략 보드의 타이어는 SVG 로 그립니다. 실제 타이어 PNG 를 쓰려면 `assets/tyres/soft.png ·
+medium.png · hard.png · inter.png · wet.png` 를 넣고 `assets.js` 의 `TYRE_IMAGES = true` 로 바꾸세요.
+파일이 없으면 SVG 로 자동 복귀합니다. 이 이미지들은 Formula One의 자산이며, 비영리 학생 프로젝트를
 전제로 원본 CDN을 참조만 하고 재배포하지 않습니다.
 
 ## 남은 작업

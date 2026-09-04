@@ -70,9 +70,11 @@ export function renderGarage(root, { scenario, compound, gridPos }) {
           h('div.gd-name', driver.name),
           h('div.gd-team', team.name),
           h('div.gd-tags',
-            tag('우천', `${driver.wetSkill}`),
-            tag('타이어 관리', driver.mgmt.toFixed(2)),
-            tag('그리드', `P${gridPos}`)))),
+            driver.ea
+              ? [tag('OVR', `${driver.ea.ovr}`), tag('PAC', `${driver.ea.pac}`), tag('RAC', `${driver.ea.rac}`), tag('EXP', `${driver.ea.exp}`)]
+              : [tag('우천', `${driver.wetSkill}`), tag('타이어 관리', driver.mgmt.toFixed(2))],
+            tag('그리드', `P${gridPos}`)),
+          driver.ea && h('div.gd-src', 'EA SPORTS F1 25 · 2026 Season Pack 레이팅'))),
 
       h('div.garage-car',
         imgOrArt(carImage(team.id, 224),
