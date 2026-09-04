@@ -10,7 +10,8 @@ import { renderRaceTrace } from '../ui/raceTrace.js';
 import { createPlayback, renderTransport } from '../ui/playback.js';
 import { renderDistribution } from '../ui/distribution.js';
 import { renderExplain, initGlossary } from '../ui/explainPanel.js';
-import { stintBar, stintText } from '../ui/strategyCards.js';
+import { renderStrategyBoard } from '../ui/strategyBoard.js';
+import { pitWindows } from '../engine/pitWindow.js';
 
 import { state, set, subscribe, scenarioOf, scenarioSeed, syncUrl, fromQuery } from '../store.js';
 import { CIRCUITS } from '../data/circuits.js';
@@ -197,23 +198,7 @@ function renderStep2(root, sc) {
       h('h2.sim-question', '어떤 전략이 빠르고, 왜 빠른가요?'),
       h('div.sim-context', h('span', contextLine(sc)), h('button.btn.btn-ghost.btn-sm', { type: 'button', onclick: () => goStep(1) }, '조건 바꾸기'))),
 
-    h('div.cards', { role: 'radiogroup', 'aria-label': '추천 전략' },
-      state.plans.map((plan, i) => {
-        const res = state.results[i];
-        const isBest = res && !res.invalid && Math.abs(res.total - best) < 0.05;
-        const checked = !state.myPlan && state.selected === i;
-        return h('div.strategy-card', {
-          role: 'radio', tabindex: checked ? '0' : '-1', 'aria-checked': String(checked),
-          'aria-label': `${plan.label}, ${plan.stints.length - 1}스톱, ${stintText(plan.stints)}`,
-          onclick: () => set({ selected: i, myPlan: null, myResult: null }, 'select'),
-          onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); set({ selected: i, myPlan: null, myResult: null }, 'select'); } },
-        },
-          h('div.sc-head', h('span.no', `0${i + 1}`), h('span.label', plan.label), h('span.risk', `위험도 ${plan.risk}`)),
-          stintBar(plan.stints, sc.circuit.laps),
-          res && !res.invalid && h('div.sc-time', h('span.total', fmtRaceTime(res.total)), h('span.gap', { class: isBest ? 'best' : '' }, isBest ? '최적' : fmtGap(res.total - best))),
-          res && !res.invalid && h('div.sc-meta', h('span', h('b', `${res.stops}`), '스톱'), h('span', '피트 ', h('b', res.pitTime.toFixed(1)), '초'), h('span', '마모 ', h('b', res.degTime.toFixed(1)), '초')),
-          h('div.sc-pick', checked ? '선택됨' : ''));
-      })),
+    h('div#board'),
 
     h('div.card.explain-panel',
       h('h3#explainTitle'),
@@ -226,6 +211,16 @@ function renderStep2(root, sc) {
     h('div.sim-foot',
       h('button.btn.btn-ghost', { type: 'button', onclick: () => goStep(1) }, '← 조건'),
       h('button.btn.btn-primary', { type: 'button', onclick: () => goStep(3) }, '레이스 보기 →')));
+
+  // 피렐리식 전략 보드. 윈도우는 피트 랩을 ±5 옮겨 시뮬레이션해 실제로 계산
+  const seed = scenarioSeed();
+  renderStrategyBoard($('#board'), {
+    plans: state.plans, results: state.results,
+    windows: state.plans.map((p) => pitWindows(sc, p, seed)),
+    selected: state.myPlan ? -1 : state.selected,
+    totalLaps: sc.circuit.laps, circuit: sc.circuit,
+    onSelect: (i) => set({ selected: i, myPlan: null, myResult: null }, 'select'),
+  });
 
   if (target && targetRes && !targetRes.invalid) {
     $('#explainTitle').textContent = state.myPlan ? '내 전략은 왜 이 시간이 나오나' : `왜 ${target.stints.length - 1}스톱인가`;
