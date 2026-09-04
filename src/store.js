@@ -90,7 +90,7 @@ export function fromQuery() {
     state[k] = ['trackTemp', 'airTemp', 'humidity', 'grid', 'step'].includes(k) ? Number(v) : v;
   });
   if (![1, 2, 3].includes(state.step)) state.step = 1;
-  // 발표 모드 플래그는 셸이 처리한다 — 여기서는 보존만
+  // 고대비 모드 플래그(present)는 셸이 처리한다 — 여기서는 보존만
   if (p.has('present')) state._present = p.get('present');
 
   if (!CIRCUITS.some((c) => c.id === state.circuitId)) state.circuitId = 'britain';

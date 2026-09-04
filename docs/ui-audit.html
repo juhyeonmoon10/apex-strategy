@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>전략 보드 픽셀 검수 — COMPOUND</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #101215; color: #e6e9ee; font: 14px/1.5 'Pretendard', 'Noto Sans KR', system-ui, sans-serif; }
+  header { padding: 18px 24px 10px; border-bottom: 1px solid #23262b; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 28px 0 8px; }
+  .muted { color: #9aa1ab; font-size: 13px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: center; padding: 10px 24px; border-bottom: 1px solid #23262b; background: #15181c; position: sticky; top: 0; z-index: 5; }
+  .bar label { display: inline-flex; align-items: center; gap: 6px; }
+  .bar select, .bar input[type=range] { accent-color: #f6c847; }
+  .bar button { background: #23262b; color: #fff; border: 1px solid #30343a; border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+  .bar button[aria-pressed=true] { background: #f6c847; color: #000; border-color: #f6c847; }
+  #stagewrap { overflow: auto; padding: 16px 24px; }
+  #stage { position: relative; width: 1500px; background: #000; outline: 1px solid #2a2e34; }
+  #stage img.ref { display: block; width: 1500px; height: auto; }
+  #stage iframe { position: absolute; left: 0; top: 0; width: 1500px; border: 0; background: transparent; }
+  #stage svg.guides { position: absolute; left: 0; top: 0; pointer-events: none; }
+  #stage.side { display: grid; grid-template-columns: 1500px 1500px; width: 3000px; }
+  #stage.side iframe { position: static; }
+  #stage.side svg.guides { display: none; }
+  #ruler { position: absolute; left: 0; top: 0; pointer-events: none; font: 12px/1 'JetBrains Mono', monospace; }
+  #ruler .h, #ruler .v { position: absolute; background: rgba(0,255,255,.6); }
+  #ruler .h { left: 0; width: 1500px; height: 1px; }
+  #ruler .v { top: 0; width: 1px; height: 100%; }
+  #ruler .tag { position: absolute; background: #0ff; color: #000; padding: 2px 5px; border-radius: 3px; white-space: nowrap; }
+  table { border-collapse: collapse; width: 100%; max-width: 1100px; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid #23262b; vertical-align: top; }
+  th { color: #9aa1ab; font-weight: 600; }
+  td.num, th.num { font-family: 'JetBrains Mono', monospace; text-align: right; white-space: nowrap; }
+  td.bad { color: #ff7b72; } td.ok { color: #7ee787; } td.warn { color: #f6c847; }
+  section { padding: 0 24px 40px; }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 2px; vertical-align: -1px; margin-right: 4px; border: 1px solid #444; }
+  code { background: #1c1f24; padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>전략 보드 픽셀 검수</h1>
+  <div class="muted">피렐리가 2026년에 배포한 "Possible Race Strategies" 원본(1500×844, 미디어 사용 허가)을 1500px 캔버스에 놓고, 우리 <code>.board</code>를 같은 폭으로 렌더링해 겹칩니다. 표의 "우리" 열은 iframe 안의 실제 DOM에서 지금 측정한 값입니다.</div>
+</header>
+
+<div class="bar">
+  <label>원본 <select id="refSel"></select></label>
+  <span>보기</span>
+  <button data-mode="overlay" aria-pressed="true">겹치기</button>
+  <button data-mode="diff" aria-pressed="false">차이(difference)</button>
+  <button data-mode="side" aria-pressed="false">나란히</button>
+  <label>우리 보드 불투명도 <input id="op" type="range" min="0" max="100" value="55"> <span id="opv">55%</span></label>
+  <label><input id="gd" type="checkbox" checked> 원본 가이드선</label>
+  <label><input id="grid" type="checkbox"> 10% 격자</label>
+  <button id="remeasure">다시 측정</button>
+  <span class="muted" id="status">보드 불러오는 중…</span>
+</div>
+
+<div id="stagewrap">
+  <div id="stage" class="overlay">
+    <img class="ref" id="ref" alt="피렐리 원본 그래픽">
+    <iframe id="ours" src="../sim.html?step=2" title="우리 전략 보드"></iframe>
+    <svg class="guides" id="guides"></svg>
+    <div id="ruler" hidden><div class="h"></div><div class="v"></div><div class="tag"></div></div>
+  </div>
+</div>
+
+<section>
+  <h2>치수 대조표 — 원본은 1500px 폭 기준, 우리는 보드 폭 1500px로 맞춘 뒤 측정</h2>
+  <div class="muted">캡 높이(대문자 높이)는 글꼴 크기의 약 70%로 환산했습니다(Titillium Web·Pretendard 모두 0.69–0.72). 허용 오차 ±3px 또는 ±8%.</div>
+  <table id="tbl"><thead><tr><th>항목</th><th class="num">피렐리 2026</th><th class="num">우리 보드</th><th class="num">차이</th><th>비고</th></tr></thead><tbody></tbody></table>
+</section>
+
+<section>
+  <h2>원본 구조 요약 (피렐리 2026, 영국·캐나다 두 경기에서 같은 규격)</h2>
+  <table>
+    <thead><tr><th>영역</th><th>내용</th><th class="num">위치·크기 (1500px 캔버스)</th><th class="num">비율</th></tr></thead>
+    <tbody>
+      <tr><td>배경</td><td>거의 검정 + 사선 광택 스트릭. 카드 테두리·둥근 모서리 없음</td><td class="num">#030507</td><td class="num">—</td></tr>
+      <tr><td>헤더 1행</td><td>국기(20×17) + <b>나라 이름 볼드</b> | 정식 GP 이름 (대문자, 일반 굵기)</td><td class="num">x 43 · y 32 · 캡 16</td><td class="num">캡 1.1% W</td></tr>
+      <tr><td>헤더 2행</td><td><b>서킷 이름 | POSSIBLE RACE STRATEGIES</b> — 대문자, 매우 굵게, 흰색</td><td class="num">x 44 · y 74–108 · 캡 34</td><td class="num">캡 2.3% W</td></tr>
+      <tr><td>로고</td><td>오른쪽 위 F1 로고 + 피렐리 로고, 아래에 작은 태그라인</td><td class="num">F1 100×42 @1230 · Pirelli 112×41 @1330 · y 60</td><td class="num">—</td></tr>
+      <tr><td>전략 행</td><td>굵은 막대가 아니라 <b>3px 선</b>. 왼쪽 컴파운드 색 → 피트 타이어 → 오른쪽 컴파운드 색. 선은 타이어 양쪽 ~120px 구간에서 어둡게 사라짐(그라데이션)</td><td class="num">y 250 · 378 · 504 · 631 (간격 127) · x 31–1410</td><td class="num">간격 15% H · 선 폭 92% W</td></tr>
+      <tr><td>피트 타이어</td><td>실사 피렐리 타이어(약간 기울어진 3D), 선 위 중앙. 가로 위치 = 윈도우 중앙 랩 ÷ 총 랩</td><td class="num">지름 60 (그림자 포함 높이 67)</td><td class="num">4.0% W</td></tr>
+      <tr><td>윈도우 글자</td><td><span style="font-weight:400">LAP</span> <b>24</b> <span style="font-weight:400">TO</span> <b>30</b> — 타이어 왼쪽, 오른쪽 정렬, 선보다 위</td><td class="num">캡 17 · 타이어와 16px 간격 · 기준선이 선 위 15px</td><td class="num">캡 1.1% W</td></tr>
+      <tr><td>오른쪽 라벨</td><td><b>ONE-STOPPER / TWO-STOPPER</b> 볼드 대문자 + 마지막 타이어. 등급(가장 빠른 전략 등) 글자는 없고, 위에서부터 빠른 순서</td><td class="num">x 1218–1393 · 캡 17 · 끝 타이어 중심 x 1441</td><td class="num">끝 타이어 96% W</td></tr>
+      <tr><td>구분선</td><td>행 영역과 푸터 사이 1px 어두운 선 + 오른쪽 점선 장식</td><td class="num">y 709 · x 30–1250 · 점선 1257–1470</td><td class="num">84% H</td></tr>
+      <tr><td>범례</td><td>타이어(72) + 2줄 라벨 "WHITE / HARD" + 큰 컴파운드 코드 <b>C1</b>(캡 28, 컴파운드 색)</td><td class="num">y 708–789 · x 30 / 240 / 490</td><td class="num">타이어 4.8% W</td></tr>
+      <tr><td>피트 손실</td><td>차 탑뷰 아이콘 210×94 + "AVERAGE / PIT STOP LOSS / <b>20s</b>"</td><td class="num">x 740 · 글자 x 950 · 캡 16</td><td class="num">—</td></tr>
+      <tr><td>서킷</td><td>트랙 지도 135×86 + "<b>52</b> LAPS"</td><td class="num">x 1224 / 1365 · y 706</td><td class="num">—</td></tr>
+      <tr><td>저작권</td><td>양끝 작은 글자</td><td class="num">y 813 · 캡 10</td><td class="num">—</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>F1.com 2025 "Expected Pit Stop Strategies &amp; Windows" (벨기에 GP, 1920×1080) — 다른 계열의 공식 차트</h2>
+  <div class="muted">피렐리가 formula1.com 전략 가이드 기사에 싣는 차트. 흰 배경 간트 막대 방식이라 우리 보드와는 계열이 다릅니다. 참고용 수치.</div>
+  <table>
+    <thead><tr><th>항목</th><th class="num">값</th></tr></thead>
+    <tbody>
+      <tr><td>플롯 영역</td><td class="num">x 192–1872 (1랩 = 39px, 랩 1 이 x 192) · 축 선 #414241 1px</td></tr>
+      <tr><td>막대</td><td class="num">높이 180 · 행 간격 47 · 테두리 1px 어두운 색 · y 139 / 366 / 592</td></tr>
+      <tr><td>색</td><td class="num"><span class="sw" style="background:#da291c"></span>소프트 #da291c · <span class="sw" style="background:#ffd100"></span>미디엄 #ffd100 · <span class="sw" style="background:#cbcbcb"></span>하드 #cbcbcb · <span class="sw" style="background:#99e699"></span>피트 윈도우 #99e699</td></tr>
+      <tr><td>글자</td><td class="num">제목 캡 28 볼드(#010101) · 행 라벨 "Strategy 1" 캡 23 · 윈도우 숫자 캡 17 · 눈금 캡 22 · 범례 캡 23</td></tr>
+      <tr><td>눈금</td><td class="num">5랩마다 5px 틱 · "Lap" 축 제목 · 범례는 색 점 + 이름</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<script>
+const REFS = {
+  gb26: { src: 'reference/pirelli_gb26_strategies.png', W: 1500, H: 844, label: '피렐리 2026 영국 GP · 실버스톤 (1500×844)',
+    rows: [250, 378, 504, 631], lineX: [31, 1410], endTyreCx: 1441, tyre: 66, legendTyre: 72,
+    headerY: 32, headerCap: 16, titleY: 74, titleCap: 34, footerSep: 709, legendY: 708, copyY: 813,
+    winCap: 17, stopperCap: 17, lineThick: 3, textGap: 16, textAboveLine: 15, bg: '#030507',
+    soft: '#d81d21', medium: '#f6c847', hard: '#ebebeb' },
+  ca26: { src: 'reference/pirelli_ca26_strategies.png', W: 1980, H: 1114, label: '피렐리 2026 캐나다 GP · 몬트리올 (1980×1114)',
+    rows: [362, 582, 802], lineX: [41, 1926], endTyreCx: 1902, tyre: 85, legendTyre: 90,
+    headerY: 42, headerCap: 21, titleY: 96, titleCap: 49, footerSep: 935, legendY: 935, copyY: 1073,
+    winCap: 22, stopperCap: 23, lineThick: 4, textGap: 20, textAboveLine: 20, bg: '#030507',
+    soft: '#e00700', medium: '#f4cb0c', hard: '#f1f3f2' },
+  be25: { src: 'reference/be25_expected_strategies.png', W: 1920, H: 1080, label: 'F1.com 2025 벨기에 GP 차트 (1920×1080)',
+    rows: [228, 455, 681], lineX: [192, 1872], endTyreCx: null, tyre: null, legendTyre: null,
+    headerY: 12, headerCap: 28, titleY: 12, titleCap: 28, footerSep: 851, legendY: 994, copyY: null,
+    winCap: 17, stopperCap: 23, lineThick: 180, textGap: null, textAboveLine: null, bg: '#ffffff',
+    soft: '#da291c', medium: '#ffd100', hard: '#cbcbcb' },
+};
+const CAP = 0.70;               // 캡 높이 / 글꼴 크기
+const S = 1500;                 // 캔버스 폭
+const $ = (s, r = document) => r.querySelector(s);
+const refSel = $('#refSel'), refImg = $('#ref'), stage = $('#stage'), frame = $('#ours'), guides = $('#guides'), status = $('#status');
+let refKey = 'gb26', mode = 'overlay', boardDoc = null, board = null;
+
+for (const [k, r] of Object.entries(REFS)) refSel.append(new Option(r.label, k));
+refSel.onchange = () => { refKey = refSel.value; loadRef(); };
+function ref() { return REFS[refKey]; }
+function k() { return S / ref().W; }   // 원본 → 캔버스 배율
+
+function loadRef() {
+  const r = ref();
+  refImg.src = r.src;
+  refImg.onload = () => { drawGuides(); measure(); };
+}
+
+document.querySelectorAll('.bar button[data-mode]').forEach((b) => b.onclick = () => {
+  mode = b.dataset.mode;
+  document.querySelectorAll('.bar button[data-mode]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  applyMode();
+});
+function applyMode() {
+  stage.className = mode === 'side' ? 'side' : 'overlay';
+  frame.style.opacity = mode === 'overlay' ? ($('#op').value / 100) : 1;
+  refImg.style.mixBlendMode = 'normal';
+  frame.style.mixBlendMode = mode === 'diff' ? 'difference' : 'normal';
+  if (mode === 'diff') frame.style.opacity = 1;
+}
+$('#op').oninput = (e) => { $('#opv').textContent = e.target.value + '%'; if (mode === 'overlay') frame.style.opacity = e.target.value / 100; };
+$('#gd').onchange = drawGuides; $('#grid').onchange = drawGuides;
+$('#remeasure').onclick = () => { isolate(); measure(); };
+
+// 원본의 기준선을 캔버스 좌표로 그린다
+function drawGuides() {
+  const r = ref(), s = k(), H = Math.round(r.H * s);
+  guides.setAttribute('width', S); guides.setAttribute('height', H);
+  let g = '';
+  if ($('#grid').checked) {
+    for (let i = 1; i < 10; i++) {
+      g += `<line x1="${S * i / 10}" y1="0" x2="${S * i / 10}" y2="${H}" stroke="rgba(255,255,255,.18)" stroke-dasharray="3 5"/>`;
+      g += `<line x1="0" y1="${H * i / 10}" x2="${S}" y2="${H * i / 10}" stroke="rgba(255,255,255,.18)" stroke-dasharray="3 5"/>`;
+    }
+  }
+  if ($('#gd').checked) {
+    const L = (x1, y1, x2, y2, c, t) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="1"/>` +
+      (t ? `<text x="${x1 + 4}" y="${y1 - 4}" fill="${c}" font-size="11" font-family="JetBrains Mono, monospace">${t}</text>` : '');
+    r.rows.forEach((y, i) => { g += L(0, y * s, S, y * s, '#00e5ff', `행 ${i + 1} 선 y=${y} (${(y / r.H * 100).toFixed(1)}% H)`); });
+    g += L(r.lineX[0] * s, 0, r.lineX[0] * s, H, '#ff4fd8', `선 시작 x=${r.lineX[0]}`);
+    g += L(r.lineX[1] * s, 0, r.lineX[1] * s, H, '#ff4fd8', `선 끝 x=${r.lineX[1]}`);
+    if (r.endTyreCx) g += L(r.endTyreCx * s, 0, r.endTyreCx * s, H, '#ffb020', `끝 타이어 중심 x=${r.endTyreCx}`);
+    g += L(0, r.titleY * s, S, r.titleY * s, '#7ee787', `제목 캡 상단 y=${r.titleY}`);
+    g += L(0, (r.titleY + r.titleCap) * s, S, (r.titleY + r.titleCap) * s, '#7ee787', `제목 기준선 y=${r.titleY + r.titleCap}`);
+    g += L(0, r.footerSep * s, S, r.footerSep * s, '#f6c847', `푸터 구분선 y=${r.footerSep} (${(r.footerSep / r.H * 100).toFixed(1)}% H)`);
+  }
+  guides.innerHTML = g;
+}
+
+// iframe 안에서 .board 만 남기고 폭을 1500px 로 고정한다
+function isolate() {
+  try {
+    boardDoc = frame.contentDocument;
+    board = boardDoc.querySelector('.board');
+    if (!board) return false;
+    if (boardDoc.body.firstElementChild !== board) {
+      boardDoc.body.replaceChildren(board);
+      boardDoc.body.style.cssText = 'margin:0;background:transparent;overflow:hidden';
+      boardDoc.documentElement.style.background = 'transparent';
+    }
+    board.style.width = S + 'px';
+    board.style.boxSizing = 'border-box';
+    frame.style.height = board.offsetHeight + 'px';
+    return true;
+  } catch (e) { status.textContent = '보드 접근 실패: ' + e.message; return false; }
+}
+frame.addEventListener('load', () => {
+  let n = 0;
+  const t = setInterval(() => {
+    if (isolate() || ++n > 60) { clearInterval(t); status.textContent = board ? '보드 격리 완료 · 측정됨' : '보드를 찾지 못했습니다 (sim.html?step=2 확인)'; measure(); }
+  }, 250);
+});
+
+// 우리 보드 실측
+function measure() {
+  const tb = $('#tbl tbody'); tb.innerHTML = '';
+  if (!board) return;
+  const r = ref(), s = k();
+  const B = board.getBoundingClientRect();
+  const q = (sel) => board.querySelector(sel);
+  const rect = (el) => el ? el.getBoundingClientRect() : null;
+  const cs = (el) => el ? getComputedStyle(el) : null;
+  const px = (v) => v == null ? null : Math.round(v * 10) / 10;
+  const rows = [...board.querySelectorAll('.board-row')].map(rect);
+  const bar = rect(q('.board-bar')), tyre = rect(q('.board-tyre:not(.start) .tyre-icon') || q('.board-tyre .tyre-icon')), endT = rect(q('.board-end .tyre-icon')), legT = rect(q('.board-legend-tyres .tyre-icon'));
+  const win = q('.board-window'), tone = q('.board-tone'), title = q('.board-title .strong'), ev = q('.board-event'), foot = q('.board-foot'), note = q('.board-note');
+  const fs = (el) => el ? parseFloat(cs(el).fontSize) : null;
+  const bgOf = (el) => { const c = cs(el); if (c.backgroundColor !== 'rgba(0, 0, 0, 0)') return c.backgroundColor; const m = [...new Set(c.backgroundImage.match(/rgba?\([^)]*\)/g) || [])].filter((x) => !x.startsWith('rgba')); return '그라데이션 ' + (m.join(' → ') || c.backgroundImage.slice(0, 50)) + ' · 테두리 ' + c.borderColor + ' · 모서리 ' + c.borderRadius; };
+  const mid = (rr) => rr.top - B.top + rr.height / 2;
+  const R = (name, refv, ours, unit, tol, note, refShown) => {
+    const d = (refv != null && ours != null) ? ours - refv : null;
+    const cls = d == null ? '' : Math.abs(d) <= (tol ?? Math.max(3, Math.abs(refv) * 0.08)) ? 'ok' : Math.abs(d) <= (tol ?? Math.max(3, Math.abs(refv) * 0.08)) * 2.5 ? 'warn' : 'bad';
+    tb.insertAdjacentHTML('beforeend', `<tr><td>${name}</td><td class="num">${refShown ?? (refv == null ? '—' : px(refv) + unit)}</td><td class="num">${ours == null ? '—' : px(ours) + unit}</td><td class="num ${cls}">${d == null ? '—' : (d > 0 ? '+' : '') + px(d) + unit}</td><td class="muted">${note || ''}</td></tr>`);
+  };
+  const ratio = B.height / (r.H * s);
+  R('보드 전체 높이 (폭 1500 기준)', r.H * s, B.height, 'px', 40, `원본은 16:9. 우리 보드는 원본의 ${(ratio * 100).toFixed(0)}%`);
+  R('배경색', null, null, '', null, `원본 ${r.bg} · 우리 ${bgOf(board)}`, r.bg);
+  R('행 개수', r.rows.length, rows.length, '개', 0, '원본은 3–4개, 라벨 없이 빠른 순서');
+  if (rows.length > 1) R('행 간격 (선 중심 → 선 중심)', (r.rows[1] - r.rows[0]) * s, rows[1].top - rows[0].top, 'px', 6);
+  R('첫 행 선의 y', r.rows[0] * s, bar ? mid(bar) : null, 'px', 12, '보드 상단 기준');
+  R('선 두께 (원본은 선, 우리는 막대 높이)', r.lineThick * s, bar ? bar.height : null, 'px', 1, r.lineThick < 20 ? '원본은 굵은 막대가 아니라 3px 선' : '');
+  R('선 시작 x', r.lineX[0] * s, bar ? bar.left - B.left : null, 'px', 6);
+  R('선 끝 x', r.lineX[1] * s, bar ? bar.right - B.left : null, 'px', 6);
+  if (r.endTyreCx) R('끝 타이어 중심 x', r.endTyreCx * s, endT ? endT.left - B.left + endT.width / 2 : null, 'px', 6);
+  if (r.tyre) R('피트 타이어 지름', r.tyre * s, tyre ? tyre.width : null, 'px', 3, '원본은 3D 실사 타이어');
+  if (r.legendTyre) R('범례 타이어 지름', r.legendTyre * s, legT ? legT.width : null, 'px', 4);
+  R('윈도우 글자 크기 (캡÷0.70)', r.winCap * s / CAP, fs(win), 'px', 2, 'LAP·TO 는 일반, 숫자만 볼드');
+  R('오른쪽 라벨 글자 크기', r.stopperCap * s / CAP, fs(tone), 'px', 2, '원본 "ONE-STOPPER" 볼드 대문자');
+  R('제목 글자 크기', r.titleCap * s / CAP, fs(title), 'px', 3, '원본은 왼쪽 정렬 대문자, 우리는 가운데');
+  R('헤더 소제목 글자 크기', r.headerCap * s / CAP, fs(ev), 'px', 2);
+  R('제목 캡 상단 y', r.titleY * s, title ? rect(title).top - B.top + (rect(title).height - fs(title) * CAP) / 2 : null, 'px', 8, '캡 높이 근사');
+  R('푸터 구분선 y', r.footerSep * s, note ? rect(note).top - B.top : null, 'px', 20, '우리는 구분선 대신 안내 문장 시작');
+  if (r.textGap) R('윈도우 글자 → 타이어 간격', r.textGap * s, (win && tyre) ? tyre.left - rect(win).right : null, 'px', 3);
+  const segS = q('.board-seg.c-SOFT'), segM = q('.board-seg.c-MEDIUM'), segH = q('.board-seg.c-HARD');
+  const cc = (el, name) => el ? (cs(el).getPropertyValue('--compound').trim() || cs(el).backgroundColor) : (cs(board).getPropertyValue(name).trim() + ' (토큰)');
+  R('소프트 색', null, null, '', null, `원본 <span class="sw" style="background:${r.soft}"></span>${r.soft} · 우리 <span class="sw" style="background:${cc(segS, '--soft')}"></span>${cc(segS, '--soft')}`, '');
+  R('미디엄 색', null, null, '', null, `원본 <span class="sw" style="background:${r.medium}"></span>${r.medium} · 우리 <span class="sw" style="background:${cc(segM, '--medium')}"></span>${cc(segM, '--medium')}`, '');
+  R('하드 색', null, null, '', null, `원본 <span class="sw" style="background:${r.hard}"></span>${r.hard} · 우리 <span class="sw" style="background:${cc(segH, '--hard')}"></span>${cc(segH, '--hard')}`, '');
+  R('본문 글꼴', null, null, '', null, `원본 Titillium Web 계열 (F1·피렐리 차트 공용) · 우리 ${cs(board).fontFamily.split(',')[0]}`, '');
+}
+
+// 마우스 위치 눈금자
+const ruler = $('#ruler');
+stage.addEventListener('mousemove', (e) => {
+  if (mode === 'side') { ruler.hidden = true; return; }
+  const b = stage.getBoundingClientRect(); const x = e.clientX - b.left, y = e.clientY - b.top; const r = ref(), s = k();
+  ruler.hidden = false; ruler.style.height = stage.offsetHeight + 'px';
+  $('.h', ruler).style.top = y + 'px'; $('.v', ruler).style.left = x + 'px';
+  const tag = $('.tag', ruler); tag.style.left = (x + 8) + 'px'; tag.style.top = (y + 8) + 'px';
+  tag.textContent = `x ${Math.round(x)} (${(x / S * 100).toFixed(1)}% W) · y ${Math.round(y)} (${(y / (r.H * s) * 100).toFixed(1)}% H) · 원본 px x ${Math.round(x / s)} y ${Math.round(y / s)}`;
+});
+stage.addEventListener('mouseleave', () => { ruler.hidden = true; });
+// iframe 위에서는 마우스 이벤트가 안 오므로 눈금자는 이미지 영역에서만 동작한다 (불투명도 0으로 낮추면 전체 사용 가능)
+
+loadRef(); applyMode();
+</script>
+</body>
+</html>

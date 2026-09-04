@@ -63,7 +63,7 @@
   --motion-scale: 1;
 }
 
-/* 발표 모드 — 빔프로젝터 대응 (기획서 7-1) */
+/* 고대비·큰 글씨 모드 — ?present=1 */
 :root[data-present] {
   --fg-2: #8a929e;
   --border: #343943;

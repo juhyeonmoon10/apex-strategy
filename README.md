@@ -2,7 +2,7 @@
 
 F1 타이어 전략 시뮬레이터. **F1 전략을 한국어로, 근거와 함께** 이해하게 만드는 것이 목표입니다.
 
-15팀 컴파운드 · 2026 런포런 (정보) · 배포: https://juhyeonmoon10.github.io/apex-strategy/
+배포: https://juhyeonmoon10.github.io/apex-strategy/
 
 정확도 경쟁에서는 이미 앞선 서비스들이 있습니다(PITWALL, f1strategysim, RaceMate — 전부 영어).
 이 프로젝트가 비어 있는 자리를 채우는 방식은 두 가지입니다.
@@ -33,10 +33,9 @@ http://localhost:8124 접속. GitHub Pages에는 이 디렉터리를 그대로 p
 | `index.html` | 홈 — 한 문장, 시연 진입, 실측 숫자 3개 |
 | `sim.html` | 시뮬레이터 — **3단계 스텝** (조건 → 전략+근거 → 레이스 재생) |
 | `research.html` | 연구 — 데이터·전처리·방법·결과·검증·함정·한계·재현 |
-| `team.html` | 팀 — 5명, 역할, 회차별 진행 |
 
 `sim.html?step=2` 처럼 URL로 단계에 직접 진입할 수 있습니다. 조건과 편집한 전략도 URL에
-직렬화됩니다. `?present=1` 또는 헤더의 **발표 모드**를 켜면 빔프로젝터용 고대비·큰 글씨로 바뀝니다.
+직렬화됩니다. `?present=1`을 붙이면 고대비·큰 글씨로 바뀝니다 (화면에 스위치는 없습니다).
 
 ## 엔진 검증
 
@@ -54,10 +53,10 @@ COMPOUND.runSelfTest()
 ## 구조
 
 ```
-index.html · sim.html · research.html · team.html
+index.html · sim.html · research.html
 styles/          tokens · base · components · responsive  (4개)
 src/
-  shell.js       공통 헤더·푸터, 발표 모드
+  shell.js       공통 헤더·푸터
   store.js       상태 + URL 직렬화
   pages/         페이지별 진입점 (home · sim · research)
   engine/        ★ DOM 을 절대 참조하지 않는 순수 함수
@@ -73,7 +72,7 @@ tools/
   collect.py     OpenF1 → data/laps.csv (랩·스틴트·날씨 조인)
   analyze.py     마모 다중회귀 + 홀드아웃 검증
   calibrate.py   서킷 파라미터 실측 대조
-docs/            기획서, 회차별 활동 기록
+docs/            기획서, 작업 기록, UI 검수
 ```
 
 **`engine/`이 `ui/`를 import하면 안 됩니다.** 이 경계 덕분에 엔진만 따로 테스트하고
@@ -147,7 +146,7 @@ SVG 아트로 자동 교체됩니다.
 전략 보드·가라지의 타이어는 `assets/tyres/` 의 피렐리 타이어 SVG(위키미디어 공용)를 씁니다 —
 soft·medium·hard(P ZERO 빨강·노랑·흰색), inter·wet(CINTURATO 초록·파랑). `assets.js` 의
 `TYRE_IMAGES` 로 끄면 자체 SVG 아이콘으로 돌아갑니다. F1 CDN 이미지와 피렐리 그래픽은 각 권리자의
-자산이며, 비영리 학생 프로젝트를 전제로 참조합니다.
+자산이며, 비영리 프로젝트를 전제로 참조합니다.
 
 ## 남은 작업
 
@@ -161,4 +160,4 @@ soft·medium·hard(P ZERO 빨강·노랑·흰색), inter·wet(CINTURATO 초록·
 ---
 
 Formula 1, F1 및 관련 상표는 Formula One Licensing BV의 자산이며, 본 프로젝트는 상표권자와
-무관한 비영리 학생 프로젝트입니다.
+무관한 비영리 프로젝트입니다.

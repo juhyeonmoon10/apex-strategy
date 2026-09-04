@@ -17,7 +17,6 @@
   .topbar { padding: 0 var(--s-3); gap: var(--s-3); }
   .nav { gap: 0; overflow-x: auto; }
   .nav a { padding: 6px 9px; font-size: 13px; }
-  .present-toggle span { display: none; }
 
   .stepper { gap: var(--s-2); }
   .step { padding: 6px; }
