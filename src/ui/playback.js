@@ -23,7 +23,8 @@ export function createPlayback() {
   function tick(t) {
     if (!playing) return;
     if (!lastT) lastT = t;
-    acc += (t - lastT) / 1000;
+    // 탭이 백그라운드였다 돌아오면 rAF 델타가 수 초씩 튄다. 한 프레임 250ms 로 상한.
+    acc += Math.min(0.25, (t - lastT) / 1000);
     lastT = t;
 
     const lapsPerSec = 2.2 * speed; // 52랩 ≈ 24초 @1배속

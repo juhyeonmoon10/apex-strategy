@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>팀 — COMPOUND</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=JetBrains+Mono:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/components.css">
+<link rel="stylesheet" href="styles/responsive.css">
+</head>
+<body>
+<div class="shell">
+<main>
+  <div class="page">
+    <div class="eyebrow">2026 2학기 런포런 · 정보</div>
+    <h1 style="margin-top:8px">15팀 컴파운드</h1>
+    <p style="margin-top:12px;max-width:60ch">데이터 분석을 통한 F1 타이어 전략 알고리즘 구현하기. 지도교사 정혜수.</p>
+
+    <div class="members">
+      <div class="member"><div class="id">10708</div><h3>박현중</h3><div class="role">리더</div><p>선행연구 정리, 연구 질문 설정, 전체 일정 관리, 보고서 총괄</p></div>
+      <div class="member"><div class="id">10120</div><h3>이시형</h3><div class="role">조력자</div><p>데이터 수집·전처리 코드 검토, 재현 실행 확인</p></div>
+      <div class="member"><div class="id">10227</div><h3>주시우</h3><div class="role">모둠원</div><p>FIA 규정 원문 대조, Pirelli 경기별 컴파운드 배정 조사</p></div>
+      <div class="member"><div class="id">10210</div><h3>문지상</h3><div class="role">모둠원</div><p>서킷별 마모 계수 검증, 세이프티카·트래픽 사건 기록</p></div>
+      <div class="member"><div class="id">10706</div><h3>문주현</h3><div class="role">모둠원</div><p>분석 결과 표·그래프, 웹사이트 연구 화면 연결</p></div>
+    </div>
+
+    <h2 style="margin-top:48px">진행</h2>
+    <ul class="timeline">
+      <li class="done"><span class="d">8/14</span><span class="k">완료</span><span>1회차 — 그룹 조직, 주제 선정</span></li>
+      <li class="done"><span class="d">8/21</span><span class="k">완료</span><span>2회차 — 주제 탐구, 가설, 탐구 설계</span></li>
+      <li class="done"><span class="d">8/28</span><span class="k">완료</span><span>3회차 — 선행연구 탐색, 자료수집. 23,048랩 수집, 마모 회귀, 홀드아웃 검증</span></li>
+      <li class="now"><span class="d">9/4</span><span class="k">진행</span><span>4회차 — 탐구활동 전개. 웹 v3 스텝 1 완성, 마모 계수 반영</span></li>
+      <li><span class="d">9/11</span><span class="k">예정</span><span>5회차 — 중간보고. 스텝 1·2 시연</span></li>
+      <li><span class="d">9/18</span><span class="k">예정</span><span>6회차 — 스텝 3 (트레이스·재생)</span></li>
+      <li><span class="d">10/23</span><span class="k">예정</span><span>10회차 — 발표 모드, 반응형, 접근성</span></li>
+      <li><span class="d">10/30</span><span class="k">예정</span><span>11회차 — 결과 정리, 보고서. 코드 프리즈</span></li>
+      <li><span class="d">11/6</span><span class="k">예정</span><span>12회차 — 발표회 준비</span></li>
+      <li><span class="d">11/13</span><span class="k">예정</span><span>13–14회차 — 학급별 발표회 / 런포런 학술제</span></li>
+    </ul>
+  </div>
+</main>
+</div>
+<script type="module">
+  import { mountShell } from './src/shell.js';
+  import { applyTeamTheme } from './src/ui/theme.js';
+  import { teamById } from './src/data/teams.js';
+  mountShell();
+  applyTeamTheme(teamById('mercedes'));
+</script>
+</body>
+</html>

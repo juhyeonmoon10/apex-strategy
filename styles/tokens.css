@@ -1,35 +1,35 @@
-/* 기획서 7.2 디자인 토큰 */
+/* COMPOUND v3 — 디자인 토큰 (웹디자인 기획서 7절) */
 :root {
-  /* 배경 — 무채색 4단 */
-  --bg-base: #0a0b0d;
-  --bg-surface: #131519;
-  --bg-raised: #1c1f25;
-  --bg-overlay: #262a32;
+  /* 바탕 — 무채색 4단 */
+  --bg-0: #0a0b0d;
+  --bg-1: #131519;
+  --bg-2: #1c1f25;
+  --bg-3: #262a32;
 
-  /* 텍스트 */
-  --fg-primary: #f2f4f7;
-  --fg-secondary: #9ba3af;
-  --fg-tertiary: #5f6672;
+  /* 글자 */
+  --fg-0: #f2f4f7;
+  --fg-1: #9ba3af;
+  --fg-2: #5f6672;
 
   /* 경계 */
   --border: #23272e;
   --border-strong: #343943;
 
-  /* 컴파운드 — 데이터 영역 전용. 팀 컬러 진입 금지 */
-  --c-soft: #da291c;
-  --c-medium: #ffd12e;
-  --c-hard: #f0f0ec;
-  --c-inter: #43b02a;
-  --c-wet: #0067ad;
-  --c-outline: var(--bg-base);
+  /* 컴파운드 — 데이터 영역 전용 */
+  --soft: #da291c;
+  --medium: #ffd12e;
+  --hard: #f0f0ec;
+  --inter: #43b02a;
+  --wet: #0067ad;
+  --c-outline: var(--bg-0);
 
-  /* 팀 테마 — 정체성 영역 전용. theme.js 가 런타임 주입 */
-  --team: #00a19c;
-  --team-accent: #27f4d2;
-  --team-secondary: #111820;
+  /* 팀 — theme.js 가 런타임 주입 */
+  --team: #b8b8b8;
+  --team-accent: #c7c9cb;
+  --team-secondary: #1c1f25;
   --team-on: #0a0b0d;
-  --team-cta: #00a19c;   /* 텍스트를 얹는 면 전용. 대비 4.5:1 보장 */
-  --team-data: #00a19c;
+  --team-cta: #b8b8b8;
+  --team-data: #b8b8b8;
 
   /* 의미색 */
   --ok: #3fb950;
@@ -37,31 +37,63 @@
   --danger: #f85149;
 
   /* 타이포 */
-  --font-display: 'Barlow Condensed', 'Noto Sans KR', system-ui, sans-serif;
-  --font-ui: 'Inter', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
+  --font-ui: 'Pretendard', 'Noto Sans KR', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
+  --fs-body: 15px;
+  --fs-explain: 17px;
+  --fs-caption: 12px;
+  --lh-explain: 1.7;
+
   /* 간격 — 4px 그리드 */
-  --s-1: 4px;
-  --s-2: 8px;
-  --s-3: 12px;
-  --s-4: 16px;
-  --s-5: 24px;
-  --s-6: 32px;
-  --s-7: 48px;
-  --s-8: 64px;
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
+  --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
 
   --radius: 8px;
   --radius-lg: 12px;
-  --max-width: 1440px;
-
-  --panel-w: 340px;
+  --max-content: 1280px;
+  --max-shell: 1440px;
   --header-h: 60px;
+
+  /* 모션 */
+  --t-fast: 150ms;
+  --t-base: 200ms;
+  --t-slow: 300ms;
+  --motion-scale: 1;
 }
 
-/* 컴파운드 색 조회용 유틸 클래스 */
-.c-SOFT { --compound: var(--c-soft); }
-.c-MEDIUM { --compound: var(--c-medium); }
-.c-HARD { --compound: var(--c-hard); }
-.c-INTER { --compound: var(--c-inter); }
-.c-WET { --compound: var(--c-wet); }
+/* 발표 모드 — 빔프로젝터 대응 (기획서 7-1) */
+:root[data-present] {
+  --fg-2: #8a929e;
+  --border: #343943;
+  --fs-body: 17px;
+  --fs-explain: 20px;
+  --fs-caption: 13px;
+  --lh-explain: 1.8;
+  --motion-scale: 1.5;
+}
+
+/* 컴파운드 색 조회 */
+.c-SOFT { --compound: var(--soft); }
+.c-MEDIUM { --compound: var(--medium); }
+.c-HARD { --compound: var(--hard); }
+.c-INTER { --compound: var(--inter); }
+.c-INTERMEDIATE { --compound: var(--inter); }
+.c-WET { --compound: var(--wet); }
+
+/* v2 호환 별칭 — 기존 ui 모듈이 참조 */
+:root {
+  --bg-base: var(--bg-0);
+  --bg-surface: var(--bg-1);
+  --bg-raised: var(--bg-2);
+  --bg-overlay: var(--bg-3);
+  --fg-primary: var(--fg-0);
+  --fg-secondary: var(--fg-1);
+  --fg-tertiary: var(--fg-2);
+  --c-soft: var(--soft);
+  --c-medium: var(--medium);
+  --c-hard: var(--hard);
+  --c-inter: var(--inter);
+  --c-wet: var(--wet);
+}

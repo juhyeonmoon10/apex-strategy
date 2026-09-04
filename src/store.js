@@ -16,6 +16,7 @@ export const state = {
   grid: 2,
   traffic: 'light',
   seed: 20260821,
+  step: 1,
   selected: 0,
   plans: [],
   myPlan: null,
@@ -60,7 +61,7 @@ export function scenarioSeed() {
 
 /* ---------- URL 직렬화 ---------- */
 
-const KEYS = ['circuitId', 'teamId', 'driverId', 'surface', 'trackTemp', 'airTemp', 'humidity', 'grid', 'traffic'];
+const KEYS = ['circuitId', 'teamId', 'driverId', 'surface', 'trackTemp', 'airTemp', 'humidity', 'grid', 'traffic', 'step'];
 
 export function toQuery() {
   const p = new URLSearchParams();
@@ -68,6 +69,7 @@ export function toQuery() {
   if (state.myPlan) {
     p.set('plan', state.myPlan.stints.map((s) => `${s.compound[0]}${s.laps}`).join('.'));
   }
+  if (state._present) p.set('present', state._present);
   return p.toString();
 }
 
@@ -85,8 +87,11 @@ export function fromQuery() {
   KEYS.forEach((k) => {
     if (!p.has(k)) return;
     const v = p.get(k);
-    state[k] = ['trackTemp', 'airTemp', 'humidity', 'grid'].includes(k) ? Number(v) : v;
+    state[k] = ['trackTemp', 'airTemp', 'humidity', 'grid', 'step'].includes(k) ? Number(v) : v;
   });
+  if (![1, 2, 3].includes(state.step)) state.step = 1;
+  // 발표 모드 플래그는 셸이 처리한다 — 여기서는 보존만
+  if (p.has('present')) state._present = p.get('present');
 
   if (!CIRCUITS.some((c) => c.id === state.circuitId)) state.circuitId = 'britain';
   const team = teamById(state.teamId);
