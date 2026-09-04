@@ -124,8 +124,9 @@ lapTime(n) = baseLap + 팀페이스 + 드라이버페이스 + 컴파운드델타
 
 ## 드라이버 능력치
 
-`src/data/teams.js` 의 드라이버 22명은 **EA SPORTS F1 25 · 2026 Season Pack DLC** 출시 시점 공식
-레이팅(OVR·EXP·RAC·AWA·PAC)을 그대로 싣고, 아래 규칙으로 엔진 파라미터에 매핑합니다.
+`src/data/teams.js` 의 드라이버 22명은 **EA SPORTS F1 25 · 2026 Season Pack DLC** 공식 레이팅
+(OVR·EXP·RAC·AWA·PAC)을 [ea.com/games/f1/ratings](https://www.ea.com/games/f1/ratings) 에서
+그대로 옮겼습니다 — 반복 "2026 Season Pack - June", 2026-09-04 확인. 아래 규칙으로 엔진 파라미터에 매핑합니다.
 
 ```
 pace     = (88 − PAC) × 0.03        랩당 초
@@ -135,6 +136,8 @@ wetSkill = OVR
 
 팀(차량) 성능치는 EA 가 공개 페이지에 싣지 않아 프로젝트 추정값을 유지합니다.
 가라지 카드에 OVR/PAC/RAC/EXP 가 출처와 함께 표시됩니다.
+EA 페이지는 Hadjar 를 Racing Bulls 소속으로 표기하지만, 그러면 Red Bull 1명 / Racing Bulls 3명이
+되어 시뮬레이터가 성립하지 않으므로 2026 발표 라인업(Hadjar → Red Bull)을 따르고 능력치만 EA 값을 씁니다.
 
 ## 이미지
 

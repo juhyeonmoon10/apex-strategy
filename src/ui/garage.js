@@ -6,7 +6,7 @@
 import { h, mount } from './dom.js';
 import { carSvg, helmetSvg, teamMark } from './carArt.js';
 import { tyreIcon } from './tyreIcon.js';
-import { DRIVERS, teamById } from '../data/teams.js';
+import { DRIVERS, teamById, EA_SOURCE } from '../data/teams.js';
 import { carImage, driverImage, driverFace, teamLogo } from '../data/assets.js';
 import { COMPOUND_KO, COMPOUND_COLOR } from '../engine/params.js';
 
@@ -75,7 +75,7 @@ export function renderGarage(root, { scenario, compound, gridPos }) {
               ? [tag('OVR', `${driver.ea.ovr}`), tag('PAC', `${driver.ea.pac}`), tag('RAC', `${driver.ea.rac}`), tag('EXP', `${driver.ea.exp}`)]
               : [tag('우천', `${driver.wetSkill}`), tag('타이어 관리', driver.mgmt.toFixed(2))],
             tag('그리드', `P${gridPos}`)),
-          driver.ea && h('div.gd-src', 'EA SPORTS F1 25 · 2026 Season Pack 레이팅'))),
+          driver.ea && h('div.gd-src', `EA SPORTS F1 25 · ${EA_SOURCE.iteration} · ea.com/games/f1/ratings`))),
 
       h('div.garage-car',
         imgOrArt(carImage(team.id, 224),
