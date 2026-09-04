@@ -17,12 +17,15 @@ const YEAR = '2026';
 export const LOCAL_ASSETS = false;
 
 /**
- * 타이어 이미지. assets/tyres/soft.png · medium.png · hard.png · inter.png · wet.png
- * 를 넣고 true 로 바꾸면 전략 보드가 SVG 대신 이 파일을 쓴다. 파일이 없으면 SVG 로 자동 복귀.
+ * 타이어 이미지 — assets/tyres/ 의 피렐리 타이어 SVG (위키미디어 공용).
+ *   soft.svg   P ZERO 빨강      medium.svg  P ZERO 노랑      hard.svg  P ZERO 흰색
+ *   inter.svg  CINTURATO 초록   wet.svg     CINTURATO 파랑
+ * 파일이 없으면 tyreIcon.js 의 자체 SVG 로 자동 복귀한다.
  */
-export const TYRE_IMAGES = false;
+export const TYRE_IMAGES = true;
+const TYRE_FILE = { SOFT: 'soft', MEDIUM: 'medium', HARD: 'hard', INTER: 'inter', INTERMEDIATE: 'inter', WET: 'wet' };
 export function tyreImage(compound) {
-  return `assets/tyres/${String(compound).toLowerCase()}.png`;
+  return `assets/tyres/${TYRE_FILE[compound] || String(compound).toLowerCase()}.svg`;
 }
 
 /** F1 CDN 이 쓰는 팀 슬러그 */

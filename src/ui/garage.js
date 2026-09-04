@@ -5,6 +5,7 @@
 
 import { h, mount } from './dom.js';
 import { carSvg, helmetSvg, teamMark } from './carArt.js';
+import { tyreIcon } from './tyreIcon.js';
 import { DRIVERS, teamById } from '../data/teams.js';
 import { carImage, driverImage, driverFace, teamLogo } from '../data/assets.js';
 import { COMPOUND_KO, COMPOUND_COLOR } from '../engine/params.js';
@@ -83,7 +84,7 @@ export function renderGarage(root, { scenario, compound, gridPos }) {
         h('div.gc-caption',
           h('span', `${circuit.track} · ${circuit.laps}랩`),
           h('span.gc-tyre',
-            h('i', { style: { background: COMPOUND_COLOR[compound] } }),
+            tyreIcon(compound, 22),
             `스타트 ${COMPOUND_KO[compound]}`))),
     ),
 
