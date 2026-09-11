@@ -179,7 +179,7 @@ export function renderRealRace(slots, rr, opts = {}) {
         drv: r.driver, pos: r.pos, out: r.out,
         gapText: r.out ? `${r.driver.officialLaps}랩 리타이어`
           : r.pos === 1 ? fmtRaceTime(r.time)
-          : r.lapsBehind > 0 ? `+${r.lapsBehind}랩` : `+${r.gap.toFixed(1)}초`,
+          : r.lapsBehind > 0 ? `+${r.lapsBehind}랩` : r.gap != null ? `+${r.gap.toFixed(1)}초` : '',
       }))
       : drivers.filter((x) => x.pos != null).sort((a, b) => a.pos - b.pos).map((x) => ({
         drv: x, pos: x.pos, out: x.dnf,
@@ -223,7 +223,7 @@ export function renderRealRace(slots, rr, opts = {}) {
         h('span.rt-name', h('i.rg-dot', { style: { background: r.driver.colour } }), r.driver.code),
         h('span.rt-tyre', r.out ? null : h('b', { class: `rt-chip c-${r.compound}` }, LETTER[r.compound] || '?'),
           r.out ? null : h('small.num', `${r.age}랩`), r.inPit ? h('small.rt-pitbadge', 'PIT') : null),
-        h('span.rt-gap.num', r.out ? '리타이어' : i === 0 ? (L > 0 ? '선두' : '') : r.lapsBehind > 0 ? `+${r.lapsBehind}랩` : `+${r.gap.toFixed(1)}초`),
+        h('span.rt-gap.num', r.out ? '리타이어' : i === 0 ? (L > 0 ? '선두' : '') : r.lapsBehind > 0 ? `+${r.lapsBehind}랩` : r.gap != null ? `+${r.gap.toFixed(1)}초` : ''),
         h('span.rt-int.num', interval));
     }));
 

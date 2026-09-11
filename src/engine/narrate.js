@@ -19,18 +19,23 @@ export function narrateLap(trace, lap, focusIdx) {
     const c = ser.stints[0].compound;
     return `그리드에서 출발을 기다립니다. <b>${COMPOUND_KO[c]}</b>로 스타트합니다.`;
   }
+  if (ser.retiredAt && lap >= ser.retiredAt) {
+    return `<b>${ser.retiredAt}랩 사고로 리타이어.</b> ${eun(ser.label)} 여기서 레이스가 끝났습니다.`;
+  }
   if (lap >= total) {
     const snap = snapshotAt(trace, total);
     const me = snap.find((r) => r.label === ser.label);
-    const lead = snap[0];
+    const lead = snap.find((r) => !r.out) || snap[0];
+    if (me.out) return `<b>결승선.</b> ${eun(ser.label)} 완주하지 못했습니다.`;
     return me.pos === 1
-      ? `<b>결승선.</b> ${josaI(ser.label)} 2위 ${snap[1] ? snap[1].label : ''}에 <b>${snap[1] ? snap[1].gap.toFixed(1) : '0'}초</b> 앞서 완주했습니다.`
-      : `<b>결승선.</b> ${eun(ser.label)} ${me.pos}위, 선두 ${lead.label}에 <b>${me.gap.toFixed(1)}초</b> 뒤졌습니다.`;
+      ? `<b>결승선.</b> ${josaI(ser.label)} 2위 ${snap[1] ? snap[1].label : ''}에 <b>${snap[1] && snap[1].gap != null ? snap[1].gap.toFixed(1) : '0'}초</b> 앞서 완주했습니다.`
+      : `<b>결승선.</b> ${eun(ser.label)} ${me.pos}위, 선두 ${lead.label}에 <b>${me.gap != null ? me.gap.toFixed(1) : '—'}초</b> 뒤졌습니다.`;
   }
 
   const pt = ser.points[lap];
   const snap = snapshotAt(trace, lap);
   const me = snap.find((r) => r.label === ser.label);
+  if (me && me.out) return `<b>리타이어.</b> ${eun(ser.label)} 레이스를 마치지 못했습니다.`;
   const parts = [];
 
   // 이 랩에 피트인
@@ -58,9 +63,9 @@ export function narrateLap(trace, lap, focusIdx) {
 
   // 순위·갭
   if (me.pos === 1 && snap[1]) {
-    parts.push(`현재 <b>선두</b>, 2위와 <b>${snap[1].gap.toFixed(1)}초</b> 차.`);
+    parts.push(`현재 <b>선두</b>, 2위와 <b>${snap[1] && snap[1].gap != null ? snap[1].gap.toFixed(1) : '0'}초</b> 차.`);
   } else if (me) {
-    parts.push(`현재 <b>${me.pos}위</b>, 선두에 <b>${me.gap.toFixed(1)}초</b> 뒤.`);
+    parts.push(`현재 <b>${me.pos}위</b>, 선두에 <b>${me.gap != null ? me.gap.toFixed(1) : '—'}초</b> 뒤.`);
   }
 
   // 교차 지점
@@ -69,7 +74,11 @@ export function narrateLap(trace, lap, focusIdx) {
 
   // SC
   if (pt.sc && pt.sc !== 'green') {
-    parts.push(pt.sc === 'sc' ? '<b>세이프티카</b> 상황입니다. 피트 손실이 절반 이하로 줄어듭니다.' : '<b>VSC</b> 상황입니다.');
+    parts.push(
+      pt.sc === 'sc' ? '<b>세이프티카</b> 상황입니다. 피트 손실이 절반 이하로 줄어듭니다.'
+        : pt.sc === 'red' ? '<b>적기</b>로 레이스가 중단됐습니다. 이때는 타이어를 손실 없이 갈 수 있습니다.'
+        : pt.sc === 'yellow' ? '<b>옐로 플래그</b> 구간입니다. 그 구간만 속도를 줄입니다.'
+        : '<b>VSC</b> 상황입니다. 피트 손실이 줄어듭니다.');
   }
 
   return parts.join(' ');

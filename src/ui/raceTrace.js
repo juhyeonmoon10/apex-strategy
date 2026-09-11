@@ -200,7 +200,7 @@ export function renderRaceTrace(root, { trace, mineColor, onScrub }) {
                   h('i', { style: { background: COMPOUND_COLOR[r.compound] } }),
                   COMPOUND_KO[r.compound])
               : h('span.tr-tyre', '그리드'),
-            h('span.tr-gap.num', r.pos === 1 ? '선두' : `+${r.gap.toFixed(1)}초`)))),
+            h('span.tr-gap.num', r.out ? '리타이어' : r.pos === 1 ? '선두' : `+${r.gap.toFixed(1)}초`)))),
     );
   }
 

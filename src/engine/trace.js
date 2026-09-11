@@ -19,7 +19,9 @@ export function buildTrace(entries) {
   const valid = entries.filter((e) => e.result && !e.result.invalid);
   if (!valid.length) return null;
 
-  const totalLaps = valid[0].result.laps.length;
+  // 사고로 리타이어하면 랩 수가 모자란다. 가장 긴 것을 기준으로 잡고 짧은 쪽은
+  // 마지막 지점에서 멈춘 것으로 채운다 (선이 그 자리에서 끊겨 보인다).
+  const totalLaps = Math.max(...valid.map((e) => e.result.laps.length));
 
   // 기준 페이스 = 비교 대상들의 평균 랩타임.
   // 특정 전략을 기준으로 삼으면 그 전략이 항상 직선이 되어 비교가 왜곡된다.
@@ -31,12 +33,18 @@ export function buildTrace(entries) {
     e.result.laps.forEach((l) => {
       points.push({ lap: l.lap, delta: ref * l.lap - l.cumulative, pit: l.pit > 0, compound: l.compound, sc: l.sc });
     });
+    const retiredAt = e.result.retired ? e.result.laps.length : null;
+    while (points.length <= totalLaps) {
+      const last = points[points.length - 1];
+      points.push({ ...last, lap: last.lap + 1, pit: false, retired: true });
+    }
     return {
       planId: e.plan.id,
       label: e.plan.label,
       isMine: e.plan.id === 'my',
       stints: e.plan.stints,
       pitLaps: e.result.pitLaps,
+      retiredAt,
       points,
     };
   });
@@ -71,6 +79,8 @@ function findCrossovers(series, totalLaps) {
    * (2)가 없으면 "상대가 방금 들어가서 26초 잃은" 순간을 역전으로 잡아버린다.
    */
   const comparable = (lap) => {
+    // 사고로 멈춘 차가 하나라도 있으면 그 뒤로는 순위 비교를 하지 않는다
+    if (series.some((ser) => ser.points[lap] && ser.points[lap].retired)) return false;
     const n = stopsAt(series[0], lap);
     if (!series.every((ser) => stopsAt(ser, lap) === n)) return false;
     return series.every((ser) => !ser.pitLaps.some((p) => p > lap - SETTLE && p <= lap));
@@ -159,8 +169,14 @@ export function snapshotAt(trace, lap) {
     delta: s.points[l].delta,
     compound: s.points[l].compound,
     sc: s.points[l].sc,
+    // 사고로 멈춘 차는 델타가 그 자리에 얼어붙는다. 그대로 두면 영원히 선두가 된다.
+    out: !!s.points[l].retired,
   }));
-  rows.sort((a, b) => b.delta - a.delta);
-  const lead = rows[0].delta;
-  return rows.map((r, i) => ({ ...r, pos: i + 1, gap: lead - r.delta }));
+  rows.sort((a, b) => {
+    if (a.out !== b.out) return a.out ? 1 : -1;
+    return b.delta - a.delta;
+  });
+  const first = rows.find((r) => !r.out);
+  const lead = first ? first.delta : rows[0].delta;
+  return rows.map((r, i) => ({ ...r, pos: i + 1, gap: r.out ? null : lead - r.delta }));
 }

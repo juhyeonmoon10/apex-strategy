@@ -2,13 +2,14 @@
 // 핵심: 매 회차마다 모든 전략에 "같은 SC 타임라인"을 준다.
 import { mulberry32 } from './rng.js';
 import { buildSafetyCarTimeline } from './safetyCar.js';
+import { buildIncidents } from './incidents.js';
 import { simulate } from './simulate.js';
 import { MC_RUNS } from './params.js';
 
 /**
  * @returns {{ perPlan: Array, scRuns:number, runs:number }}
  */
-export function runMonteCarlo(scenario, plans, baseSeed, runs = MC_RUNS) {
+export function runMonteCarlo(scenario, plans, baseSeed, runs = MC_RUNS, risk = null) {
   const totalLaps = scenario.circuit.laps;
   const results = plans.map(() => []);
   // 절대 완주 시간의 분산은 "SC 가 났는가" 가 지배해버려서 전략 비교에 쓸 수 없다.
@@ -20,7 +21,12 @@ export function runMonteCarlo(scenario, plans, baseSeed, runs = MC_RUNS) {
 
   for (let i = 0; i < runs; i++) {
     const seed = (baseSeed + i * 7919) >>> 0;
-    const timeline = buildSafetyCarTimeline(scenario.circuit, totalLaps, mulberry32(seed));
+    // 사고 확률을 설정했으면 매 회차 사고를 새로 굴린다 — 그게 곧 SC/VSC/적기가 된다
+    const rand = mulberry32(seed);
+    const inc = risk && (risk.myRisk > 0 || risk.rivalRisk > 0)
+      ? buildIncidents({ ...risk, circuit: scenario.circuit, weather: scenario.weather, totalLaps }, rand)
+      : null;
+    const timeline = inc ? inc.timeline : buildSafetyCarTimeline(scenario.circuit, totalLaps, rand);
     const hadSc = timeline.some((s) => s !== 'green');
     if (hadSc) scRuns++;
 
@@ -28,7 +34,7 @@ export function runMonteCarlo(scenario, plans, baseSeed, runs = MC_RUNS) {
     let bestTime = Infinity;
     const round = [];
     for (let p = 0; p < plans.length; p++) {
-      const r = simulate(scenario, plans[p], seed, timeline);
+      const r = simulate(scenario, plans[p], seed, timeline, inc ? inc.myOut : null);
       const t = r.invalid ? Infinity : r.total;
       results[p].push(t);
       round.push(t);

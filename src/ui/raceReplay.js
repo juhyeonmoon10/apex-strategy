@@ -20,6 +20,8 @@ export const SERIES_COLORS = ['#F2F4F7', '#22C1E8', '#C084FC'];
 const SHORT = { '예상 최속': '최속', '안정 우선': '안정', '공격적 대안': '공격', '내 전략': '내 차' };
 const PIT_ENTRY = 0.93;          // 랩의 93% 지점에서 피트레인으로 들어간다
 const LETTER = { SOFT: 'S', MEDIUM: 'M', HARD: 'H', INTER: 'I', WET: 'W' };
+const FLAG_LABEL = { green: '그린', yellow: '옐로', vsc: 'VSC', sc: '세이프티카', red: '적기' };
+const FLAG_CHIP = { yellow: 'YELLOW FLAG', vsc: 'VIRTUAL SC', sc: 'SAFETY CAR', red: 'RED FLAG' };
 
 const short = (label) => SHORT[label] || label.slice(0, 3);
 
@@ -150,7 +152,7 @@ function buildEvents(valid, trace) {
     ev.push({ lap: c.lap, cls: 'cross', html: txt ? txt.replace(/(\S+) 앞섭니다/, '<b>$1</b> 앞섭니다') : `<b>${short(c.toLabel)}</b>이(가) ${short(c.fromLabel)} 앞으로` });
   });
   const fin = snapshotAt(trace, trace.totalLaps);
-  ev.push({ lap: trace.totalLaps, cls: 'finish', html: '<b>결승선</b> — ' + fin.map((r) => `${r.pos}위 ${short(r.label)}${r.pos > 1 ? ` +${r.gap.toFixed(1)}초` : ''}`).join(' · ') });
+  ev.push({ lap: trace.totalLaps, cls: 'finish', html: '<b>결승선</b> — ' + fin.map((r) => `${r.out ? '리타이어' : `${r.pos}위`} ${short(r.label)}${!r.out && r.pos > 1 && r.gap != null ? ` +${r.gap.toFixed(1)}초` : ''}`).join(' · ') });
   return ev.sort((a, b) => a.lap - b.lap);
 }
 
@@ -242,11 +244,15 @@ export function renderRaceReplay(slots, ctx) {
     lastLap = lap;
     const L = lap == null ? 0 : lap;
     lapNum.textContent = lap == null ? '—' : String(L);
-    const sc = L > 0 ? valid[focusIdx].result.laps[L - 1].sc : 'green';
-    status.textContent = lap == null ? '출발 전' : L >= total ? '완주' : sc === 'sc' ? '세이프티카' : sc === 'vsc' ? 'VSC' : '그린';
+    const rec = L > 0 ? valid[focusIdx].result.laps[L - 1] : null;
+    const sc = rec ? rec.sc : 'green';
+    const done = !rec || L >= valid[focusIdx].result.laps.length;
+    status.textContent = lap == null ? '출발 전'
+      : valid[focusIdx].result.retired && L >= valid[focusIdx].result.retireLap ? '리타이어'
+      : L >= total ? '완주' : FLAG_LABEL[sc] || '그린';
     status.className = `rh-status ${lap == null ? 'pre' : L >= total ? 'fin' : sc}`;
     scChip.setAttribute('visibility', sc === 'green' || lap == null ? 'hidden' : 'visible');
-    scChip.querySelector('text').textContent = sc === 'vsc' ? 'VIRTUAL SC' : 'SAFETY CAR';
+    scChip.querySelector('text').textContent = FLAG_CHIP[sc] || 'SAFETY CAR';
 
     // 타워
     const snap = snapshotAt(trace, L);
@@ -257,12 +263,14 @@ export function renderRaceReplay(slots, ctx) {
       const rec = L > 0 ? laps[Math.min(L, laps.length) - 1] : null;
       const before = prev ? prev.find((x) => x.label === r.label).pos : r.pos;
       const move = before - r.pos;
-      const interval = i === 0 ? '' : `+${(r.gap - snap[i - 1].gap).toFixed(1)}`;
-      return h('div.rt-row', { class: `${si === focusIdx ? 'focus' : ''} ${rec && rec.pit > 0 ? 'pit' : ''}` },
-        h('span.rt-pos.num', String(r.pos), move ? h('em', { class: move > 0 ? 'up' : 'down' }, move > 0 ? `▲${move}` : `▼${-move}`) : null),
+      const above = snap[i - 1];
+      const interval = i === 0 || r.out || r.gap == null || !above || above.gap == null
+        ? '' : `+${(r.gap - above.gap).toFixed(1)}`;
+      return h('div.rt-row', { class: `${si === focusIdx ? 'focus' : ''} ${rec && rec.pit > 0 ? 'pit' : ''} ${r.out ? 'out' : ''}` },
+        h('span.rt-pos.num', r.out ? '—' : String(r.pos), move && !r.out ? h('em', { class: move > 0 ? 'up' : 'down' }, move > 0 ? `▲${move}` : `▼${-move}`) : null),
         h('span.rt-name', h('i.rg-dot', { style: { background: colors[si] } }), r.label),
         h('span.rt-tyre', h('b', { class: `rt-chip c-${r.compound}` }, LETTER[r.compound] || '?'), rec ? h('small.num', `${rec.age}랩`) : null, rec && rec.pit > 0 ? h('small.rt-pitbadge', 'PIT') : null),
-        h('span.rt-gap.num', i === 0 ? (L > 0 ? '선두' : '') : `+${r.gap.toFixed(1)}초`),
+        h('span.rt-gap.num', r.out ? '리타이어' : i === 0 ? (L > 0 ? '선두' : '') : `+${r.gap.toFixed(1)}초`),
         h('span.rt-int.num', interval));
     }));
 

@@ -37,18 +37,23 @@ export function buildSafetyCarTimeline(circuit, totalLaps, rand) {
 
 export function lapMultiplier(status) {
   if (status === 'sc') return SAFETY_CAR.lapMultiplier;
+  if (status === 'red') return SAFETY_CAR.redMultiplier;
   if (status === 'vsc') return SAFETY_CAR.vscMultiplier;
+  if (status === 'yellow') return SAFETY_CAR.yellowMultiplier;
   return 1;
 }
 
 export function pitLossFactor(status) {
   if (status === 'sc') return SAFETY_CAR.pitLossSc;
+  if (status === 'red') return SAFETY_CAR.pitLossRed;
   if (status === 'vsc') return SAFETY_CAR.pitLossVsc;
-  return 1;
+  return 1;   // 옐로는 피트 손실이 줄지 않는다
 }
 
 export function wearFactor(status) {
-  return status === 'green' ? 1 : SAFETY_CAR.wearFactor;
+  if (status === 'green') return 1;
+  if (status === 'yellow') return SAFETY_CAR.yellowWearFactor;
+  return SAFETY_CAR.wearFactor;
 }
 
 /** 타임라인을 [{from,to,type}] 구간 목록으로 (차트 밴드용) */

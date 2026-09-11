@@ -16,6 +16,8 @@ export const state = {
   humidity: 55,
   grid: 2,
   traffic: 'light',
+  myRisk: 0,              // 내 드라이버 사고 확률 (%) — 가상 조건 전용
+  rivalRisk: 6,           // 상대 한 대당 사고 확률 (%)
   seed: 20260821,
   step: 1,
   selected: 0,
@@ -56,13 +58,13 @@ export function scenarioOf() {
 export function scenarioSeed() {
   return hashSeed(
     [state.circuitId, state.teamId, state.driverId, state.surface,
-     state.trackTemp, state.grid, state.traffic].join('|')
+     state.trackTemp, state.grid, state.traffic, state.myRisk, state.rivalRisk].join('|')
   );
 }
 
 /* ---------- URL 직렬화 ---------- */
 
-const KEYS = ['raceKey', 'circuitId', 'teamId', 'driverId', 'surface', 'trackTemp', 'airTemp', 'humidity', 'grid', 'traffic', 'step'];
+const KEYS = ['raceKey', 'myRisk', 'rivalRisk', 'circuitId', 'teamId', 'driverId', 'surface', 'trackTemp', 'airTemp', 'humidity', 'grid', 'traffic', 'step'];
 
 export function toQuery() {
   const p = new URLSearchParams();
@@ -88,7 +90,7 @@ export function fromQuery() {
   KEYS.forEach((k) => {
     if (!p.has(k)) return;
     const v = p.get(k);
-    state[k] = ['trackTemp', 'airTemp', 'humidity', 'grid', 'step'].includes(k) ? Number(v) : v;
+    state[k] = ['trackTemp', 'airTemp', 'humidity', 'grid', 'step', 'myRisk', 'rivalRisk'].includes(k) ? Number(v) : v;
     if (k === 'raceKey' && (v === 'null' || v === '')) state[k] = null;
   });
   if (![1, 2, 3].includes(state.step)) state.step = 1;

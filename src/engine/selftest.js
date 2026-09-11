@@ -6,6 +6,8 @@ import { searchStrategies } from './strategySearch.js';
 import { CIRCUITS } from '../data/circuits.js';
 import { TEAMS, DRIVERS } from '../data/teams.js';
 import { TYRE } from './params.js';
+import { buildIncidents } from './incidents.js';
+import { mulberry32 } from './rng.js';
 
 function baseScenario(circuitId = 'britain') {
   const circuit = CIRCUITS.find((c) => c.id === circuitId);
@@ -126,6 +128,39 @@ export function runSelfTest(log = true) {
   check('컴파운드 순서: 같은 나이면 SOFT < MEDIUM < HARD 랩타임', () => {
     const t = (c) => TYRE[c].delta;
     return { pass: t('SOFT') < t('MEDIUM') && t('MEDIUM') < t('HARD'), detail: `${t('SOFT')} / ${t('MEDIUM')} / ${t('HARD')}` };
+  });
+
+  check('사고 모델: 확률 0 이면 깃발이 하나도 없다', () => {
+    const inc = buildIncidents({
+      circuit: sc.circuit, weather: sc.weather, totalLaps: sc.circuit.laps,
+      myRisk: 0, rivalRisk: 0, rivals: DRIVERS.slice(0, 20).map((d) => ({ name: d.name, code: d.name })),
+    }, mulberry32(7));
+    return {
+      pass: inc.incidents.length === 0 && inc.timeline.every((x) => x === 'green') && inc.myOut === null,
+      detail: `사고 ${inc.incidents.length}건`,
+    };
+  });
+
+  check('사고 모델: 같은 시드면 같은 사고가 난다', () => {
+    const opts = {
+      circuit: sc.circuit, weather: sc.weather, totalLaps: sc.circuit.laps,
+      myRisk: 0.3, rivalRisk: 0.2, rivals: DRIVERS.slice(0, 20).map((d) => ({ name: d.name, code: d.name })),
+    };
+    const a = buildIncidents(opts, mulberry32(99));
+    const b = buildIncidents(opts, mulberry32(99));
+    return {
+      pass: JSON.stringify(a.timeline) === JSON.stringify(b.timeline) && a.myOut === b.myOut,
+      detail: `사고 ${a.incidents.length}건 · 내 리타이어 ${a.myOut ?? '없음'}`,
+    };
+  });
+
+  check('사고 리타이어: 그 랩에서 기록이 끝난다', () => {
+    const plan = { id: 't', label: '', stints: [{ compound: 'MEDIUM', laps: 26 }, { compound: 'HARD', laps: 26 }] };
+    const r = simulate(sc, plan, 5, green, 20);
+    return {
+      pass: r.retired === true && r.laps.length === 20 && r.retireLap === 20,
+      detail: `${r.laps.length}랩에서 종료`,
+    };
   });
 
   const passed = results.filter((r) => r.pass).length;

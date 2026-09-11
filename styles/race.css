@@ -205,3 +205,20 @@
 @media (max-width: 700px) {
   .real-verdict { grid-template-columns: 1fr; gap: var(--s-3); }
 }
+
+/* ---- 사고 모델 (가상 조건) ---- */
+.risk-note { font-size: 12px; color: var(--fg-2); line-height: 1.5; margin: 8px 0 0; }
+.risk-panel { margin-top: var(--s-4); padding: 14px 18px; border-radius: var(--radius-lg, 10px);
+  background: var(--bg-1); border: 1px solid var(--border); border-left: 4px solid var(--warn); }
+.risk-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
+.risk-head b { font-size: 15px; color: var(--fg-0); }
+.risk-out { margin: 10px 0 0; padding: 9px 12px; border-radius: 6px; background: rgba(248,81,73,0.12);
+  color: var(--fg-0); font-size: var(--fs-explain, 15px); line-height: 1.5; }
+.risk-list { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.risk-list li { display: grid; grid-template-columns: 46px 1fr; gap: 10px; align-items: baseline;
+  font-size: 13px; color: var(--fg-1); padding: 3px 0; border-bottom: 1px dashed var(--border); }
+.risk-list li.mine { color: var(--fg-0); font-weight: 700; }
+
+/* 옐로 플래그 띠와 상태 칩 */
+.rg-sc.yellow { background: repeating-linear-gradient(135deg, rgba(255,209,46,0.28) 0 4px, rgba(255,209,46,0.08) 4px 8px); }
+.rh-status.yellow { background: #a8821a; color: #fff6d8; }

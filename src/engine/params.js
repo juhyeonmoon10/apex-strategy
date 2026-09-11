@@ -61,12 +61,37 @@ export const TRAFFIC_DELTA = { clean: 0, light: 0.08, medium: 0.20, heavy: 0.45 
 export const SAFETY_CAR = {
   minLaps: 3,
   maxLaps: 5,
-  lapMultiplier: 1.35,   // SC 중 랩타임
-  vscMultiplier: 1.15,   // VSC 중 랩타임
-  wearFactor: 0.30,      // SC/VSC 중 마모 누적 비율
-  pitLossSc: 0.40,       // SC 중 피트인 시 손실 비율
+  lapMultiplier: 1.35,       // SC 중 랩타임
+  vscMultiplier: 1.15,       // VSC 중 랩타임
+  yellowMultiplier: 1.04,    // 국지 옐로 — 해당 구간만 감속
+  redMultiplier: 1.35,       // 적기 — 중단 직전 랩은 SC 페이스로 들어온다
+  wearFactor: 0.30,          // SC/VSC 중 마모 누적 비율
+  yellowWearFactor: 0.85,    // 옐로는 한 구간만 느려서 마모가 거의 그대로 쌓인다
+  pitLossSc: 0.40,           // SC 중 피트인 시 손실 비율
   pitLossVsc: 0.60,
+  pitLossRed: 0,             // 적기 중단 중에는 손실 없이 타이어를 간다
   vscLaps: 2,
+};
+
+/**
+ * 사고 모델 (가상 조건 레이스 전용).
+ *
+ * 확률은 "레이스 전체에서 한 대가 사고를 낼 확률"이다. 랩당이 아니라 경기당이라
+ * 사람이 감을 잡기 쉽다. 상대 19~21대에 각각 굴리므로 6% 면 한 경기에 1.2대꼴이다.
+ *
+ * severity 는 사고가 났을 때 어떤 깃발로 이어지는지의 조건부 분포다.
+ * 실제 F1 에서 대부분의 사고는 국지 옐로로 끝나고, 차를 치워야 하면 VSC·SC,
+ * 트랙을 막거나 배리어를 고쳐야 하면 적기가 된다.
+ */
+export const INCIDENT = {
+  myDefault: 0,              // 내 드라이버 기본 사고 확률 (%) — 0 이면 기존과 같다
+  rivalDefault: 6,           // 상대 한 대당 사고 확률 (%)
+  severity: { yellow: 0.55, vsc: 0.20, sc: 0.20, red: 0.05 },
+  laps: { yellow: [1, 2], vsc: [1, 2], sc: [3, 5], red: [1, 2] },
+  // 젖은 노면에서는 사고가 늘어난다
+  surfaceMultiplier: { dry: 1, rain: 1.8, heavy: 2.6 },
+  // 서킷 위험도(scRate)가 높을수록 심각한 쪽으로 기운다
+  escalation: 0.6,
 };
 
 export const RACE = {

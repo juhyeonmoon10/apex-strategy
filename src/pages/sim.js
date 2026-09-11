@@ -16,6 +16,9 @@ import { pitWindows } from '../engine/pitWindow.js';
 import { renderRealRace } from '../ui/realRaceView.js';
 import { loadRaceIndex, loadRace } from '../data/races.js';
 import { buildRealRace, myCarFrom, timelineFromRace, planFromStints, paceOffset } from '../engine/realRace.js';
+import { buildIncidents, FLAG_KO } from '../engine/incidents.js';
+import { DRIVERS } from '../data/teams.js';
+import { mulberry32 } from '../engine/rng.js';
 
 import { state, set, subscribe, scenarioOf, scenarioSeed, syncUrl, fromQuery } from '../store.js';
 import { CIRCUITS } from '../data/circuits.js';
@@ -60,6 +63,7 @@ function getWindows(sc) {
    추천 탐색·피트 윈도우·시뮬레이션이 전부 같은 타임라인을 쓴다. */
 let realIndex = [];
 let realRace = null;      // data/races 의 경기 JSON
+let incident = null;      // 가상 조건 레이스의 사고 실현 (buildIncidents 결과)
 
 /** 실제 경기 모드면 랩 수를 그 경기에 맞춘 시나리오 */
 function scenarioNow() {
@@ -75,6 +79,25 @@ function timelineOf(sc) {
     : new Array(sc.circuit.laps).fill('green');
 }
 
+/**
+ * 가상 조건 레이스의 사고 실현.
+ *
+ * 추천(스텝 2)은 사고를 모르는 상태에서 계산해야 한다 — 언제 세이프티카가 나올지 알고
+ * 짜는 전략은 의미가 없다. 그래서 추천은 그린 타임라인으로 하고, 이 실현은 스텝 3
+ * "이 전략으로 달렸더니 이런 레이스가 됐다"에만 쓴다.
+ */
+function realiseIncidents(sc) {
+  if (realRace) return null;                       // 실제 경기 모드는 그날 기록을 쓴다
+  const myRisk = (state.myRisk || 0) / 100;
+  const rivalRisk = (state.rivalRisk || 0) / 100;
+  if (myRisk <= 0 && rivalRisk <= 0) return null;
+  const rivals = DRIVERS.filter((d) => d.id !== sc.driver.id).map((d) => ({ name: d.name, code: d.name.split(' ').slice(-1)[0] }));
+  return buildIncidents({
+    circuit: sc.circuit, weather: sc.weather, totalLaps: sc.circuit.laps,
+    myRisk, rivalRisk, rivals, myName: sc.driver.name,
+  }, mulberry32((scenarioSeed() ^ 0x5f3a) >>> 0));
+}
+
 function recompute() {
   const sc = scenarioNow();
   const seed = scenarioSeed();
@@ -83,7 +106,16 @@ function recompute() {
   const results = plans.map((p) => simulate(sc, p, seed, tl));
   let myPlan = state.myPlan ? refit(state.myPlan, sc.circuit.laps) : null;
   const myResult = myPlan ? simulate(sc, myPlan, seed, tl) : null;
+  incident = realiseIncidents(sc);
   set({ plans, results, myPlan, myResult, selected: Math.min(state.selected, Math.max(0, plans.length - 1)), mc: null }, 'compute');
+}
+
+/** 스텝 3 용 — 사고와 깃발이 들어간 실제 진행 */
+function raceTimeline(sc) {
+  return incident ? incident.timeline : timelineOf(sc);
+}
+function raceSim(sc, plan, mine) {
+  return simulate(sc, plan, scenarioSeed(), raceTimeline(sc), mine && incident ? incident.myOut : null);
 }
 
 function refit(plan, totalLaps) {
@@ -110,7 +142,11 @@ async function runMc() {
   running = true;
   render();
   await new Promise((r) => setTimeout(r, 16));
-  const mc = runMonteCarlo(scenarioNow(), state.plans, scenarioSeed());
+  const sc = scenarioNow();
+  const rivals = DRIVERS.filter((d) => d.id !== sc.driver.id).map((d) => ({ name: d.name, code: d.name.split(' ').slice(-1)[0] }));
+  const mc = runMonteCarlo(sc, state.plans, scenarioSeed(), undefined, realRace ? null : {
+    myRisk: (state.myRisk || 0) / 100, rivalRisk: (state.rivalRisk || 0) / 100, rivals, myName: sc.driver.name,
+  });
   running = false;
   set({ mc }, 'mc');
 }
@@ -283,7 +319,15 @@ function renderStep1(root, sc) {
             numField('습도', 'humidity', 10, 100, '%'),
             h('div.field', h('label', '예상 트래픽'),
               h('div.seg', [['clean', '없음'], ['light', '적음'], ['medium', '보통'], ['heavy', '많음']].map(([v, l]) =>
-                h('button', { type: 'button', 'aria-pressed': String(state.traffic === v), onclick: () => set({ traffic: v }, 'scenario') }, l))))))),
+                h('button', { type: 'button', 'aria-pressed': String(state.traffic === v), onclick: () => set({ traffic: v }, 'scenario') }, l)))),
+            realOn
+              ? h('p.risk-note', '실제 경기 모드에서는 그날 실제로 일어난 사고와 깃발을 씁니다. 사고 확률은 가상 조건에서만 설정합니다.')
+              : [
+                numField('내 드라이버 사고 확률', 'myRisk', 0, 60, '%'),
+                numField('상대 한 대당 사고 확률', 'rivalRisk', 0, 40, '%'),
+                h('p.risk-note', `상대 ${DRIVERS.length - 1}대에 각각 굴립니다. 사고가 나면 심각도에 따라 `
+                  + '옐로 플래그·VSC·세이프티카·적기로 이어집니다. 내 드라이버가 사고를 내면 그 랩에서 레이스가 끝납니다.'),
+              ]))),
       h('div#garage')),
     h('div.sim-foot',
       h('span', { style: { fontSize: '13px', color: 'var(--fg-2)' } }, '조건을 바꾸면 오른쪽이 바로 반영됩니다'),
@@ -370,11 +414,35 @@ function renderPlanPartial() {
   syncUrl();
 }
 
+/** 사고·깃발 요약. 사고가 없으면 아무것도 그리지 않는다. */
+function incidentPanel(entries, focusIdx) {
+  if (!incident || !incident.incidents.length) return null;
+  const mine = entries[focusIdx] && entries[focusIdx].result;
+  const out = mine && mine.retired ? mine.retireLap : null;
+  const counts = { yellow: 0, vsc: 0, sc: 0, red: 0 };
+  incident.incidents.forEach((i) => { counts[i.kind]++; });
+
+  return h('div.risk-panel',
+    h('div.risk-head',
+      h('b', `사고 ${incident.incidents.length}건`),
+      Object.entries(counts).filter(([, n]) => n).map(([k, n]) =>
+        h('span', { class: `chip-${k === 'yellow' ? 'green' : k}` }, `${FLAG_KO[k]} ${n}회`))),
+    out
+      ? h('p.risk-out', `내 드라이버가 ${out}랩에 사고로 리타이어했습니다. 여기까지가 이 전략의 기록입니다.`)
+      : null,
+    h('ul.risk-list', incident.incidents.map((i) => h('li', { class: i.mine ? 'mine' : '' },
+      h('span.rl-lap.num', `L${i.lap}`), h('span', i.text)))),
+    h('p.risk-note', '사고는 조건에서 정한 확률로 굴린 것입니다. 같은 조건이면 항상 같은 결과가 나옵니다. '
+      + '추천 전략은 사고를 모르는 상태에서 계산하므로, 여기 기록과 스텝 2의 예상 시간은 다를 수 있습니다.'));
+}
+
 /* ---------- 스텝 3 — 레이스 ---------- */
 function renderStep3(root, sc) {
   if (realRace) return renderStep3Real(root, sc);
-  const entries = state.plans.map((p, i) => ({ plan: p, result: state.results[i] }));
-  if (state.myPlan && state.myResult) entries.push({ plan: state.myPlan, result: state.myResult });
+  // 스텝 2 는 사고를 모르는 계산이고, 여기서는 사고가 일어난 레이스를 다시 돌린다
+  const entries = state.plans.map((p) => ({ plan: p, result: raceSim(sc, p, false) }));
+  if (state.myPlan) entries.push({ plan: state.myPlan, result: raceSim(sc, state.myPlan, true) });
+  else if (entries[state.selected]) entries[state.selected].result = raceSim(sc, state.plans[state.selected], true);
   trace = buildTrace(entries);
   const focusIdx = state.myPlan ? entries.length - 1 : state.selected;
   const dataColor = resolveAccent(sc.team.colors.team, 'data');
@@ -391,6 +459,7 @@ function renderStep3(root, sc) {
       h('div.race-main', h('div.race-map#raceMap'), h('div.race-tower#raceTower')),
       h('div.race-gantt#raceGantt'),
       h('div.race-log', h('h4', '레이스 로그'), h('div#raceLog'))),
+    incidentPanel(entries, focusIdx),
     h('details.fold',
       h('summary', '레이스 트레이스', h('span.hint', '평균 페이스 대비 누적 시간차')),
       h('div.fold-body', h('div#trace'))),
@@ -464,7 +533,7 @@ function renderStep3Real(root, sc) {
           + `${realRace.totalLaps}랩을 달렸을 때의 자리입니다. `
           + (finish.pos === 1
             ? `실제 우승자 ${winner.name} 보다 앞섭니다.`
-            : `선두와 ${finish.lapsBehind > 0 ? `${finish.lapsBehind}랩` : `${finish.gap.toFixed(1)}초`} 차이입니다.`)),
+            : `선두와 ${finish.lapsBehind > 0 ? `${finish.lapsBehind}랩` : `${finish.gap != null ? finish.gap.toFixed(1) : '—'}초`} 차이입니다.`)),
         h('p.rv-note', '상대는 그날 실제로 기록한 랩타임 그대로이고, 내 차만 우리 모델로 계산합니다. '
           + '세이프티카·VSC 구간은 그 경기 기록을 그대로 넣었습니다. '
           + (offset

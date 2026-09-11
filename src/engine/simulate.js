@@ -37,8 +37,9 @@ function expandStints(stints) {
  * @param {Plan} plan
  * @param {number} seed
  * @param {string[]} [sharedTimeline] 몬테카를로에서 전략 간 공유할 SC 타임라인
+ * @param {number} [retireLap] 이 랩에서 사고로 레이스가 끝난다 (가상 조건 레이스의 사고 모델)
  */
-export function simulate(scenario, plan, seed, sharedTimeline) {
+export function simulate(scenario, plan, seed, sharedTimeline, retireLap) {
   const { circuit, team, driver, weather, grid, traffic } = scenario;
   const totalLaps = circuit.laps;
 
@@ -57,6 +58,8 @@ export function simulate(scenario, plan, seed, sharedTimeline) {
   let cumulative = gridLoss(grid);
   let pitTime = 0;
   let degTime = 0;
+
+  const stopAt = retireLap && retireLap >= 1 && retireLap <= totalLaps ? retireLap : null;
 
   for (let lap = 1; lap <= totalLaps; lap++) {
     const { compound, age, stintIndex } = perLap[lap - 1];
@@ -91,6 +94,11 @@ export function simulate(scenario, plan, seed, sharedTimeline) {
       lap, time: total, cumulative, compound, age, stintIndex,
       sc: scStatus, pit, parts,
     });
+
+    if (stopAt && lap >= stopAt) {
+      events.push({ lap, type: 'retire', text: `${lap}랩 사고로 리타이어` });
+      break;
+    }
   }
 
   const scBands = toBands(timeline);
@@ -105,6 +113,8 @@ export function simulate(scenario, plan, seed, sharedTimeline) {
   return {
     invalid: false,
     planId: plan.id,
+    retired: !!stopAt,
+    retireLap: stopAt || null,
     total: cumulative,
     laps,
     events,
