@@ -46,7 +46,7 @@ export const TEAM_SLUG = {
 /** 드라이버 슬러그 = 이름3 + 성3 + 01 */
 export const DRIVER_SLUG = {
   russell: 'georus01',
-  antonelli: 'kimant01',
+  antonelli: 'andant01',   // CDN 은 통칭 Kimi 가 아니라 등록명 Andrea 를 쓴다 (kimant01 은 404)
   leclerc: 'chalec01',
   hamilton: 'lewham01',
   norris: 'lannor01',

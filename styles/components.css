@@ -292,11 +292,6 @@ table.laps th { color: var(--fg-2); font-weight: 500; }
 .hero-trace { margin: var(--s-6) 0; }
 .hero-trace .chart-wrap { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--bg-1); padding: var(--s-3); }
 
-.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-4); margin: var(--s-6) 0; }
-.tile { background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--s-5); }
-.tile .v { font-family: var(--font-mono); font-size: 40px; font-weight: 700; line-height: 1; color: var(--fg-0); }
-.tile .l { font-size: 13px; color: var(--fg-1); margin-top: var(--s-2); }
-.tile .src { font-size: 11px; color: var(--fg-2); margin-top: 4px; font-family: var(--font-mono); }
 
 .why { padding: var(--s-6) 0; border-top: 1px solid var(--border); display: grid; grid-template-columns: 1fr 2fr; gap: var(--s-6); }
 .why h2 { font-size: 24px; }

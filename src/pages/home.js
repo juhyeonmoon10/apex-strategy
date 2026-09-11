@@ -1,6 +1,6 @@
 // 홈 — 히어로 트레이스 애니메이션 + 숫자 타일
 import { mountShell } from '../shell.js';
-import { h, mount, countUp } from '../ui/dom.js';
+import { h, mount } from '../ui/dom.js';
 import { applyTeamTheme, resolveAccent } from '../ui/theme.js';
 import { renderRaceTrace } from '../ui/raceTrace.js';
 import { circuitById } from '../data/circuits.js';
@@ -45,19 +45,4 @@ svg.querySelectorAll('path[stroke]').forEach((p, i) => {
   p.style.strokeDashoffset = String(len);
   p.style.transition = `stroke-dashoffset 3s cubic-bezier(0.4, 0, 0.2, 1) ${i * 120}ms`;
   requestAnimationFrame(() => requestAnimationFrame(() => { p.style.strokeDashoffset = '0'; }));
-});
-
-// 숫자 타일 카운트업
-document.querySelectorAll('.tile .v[data-to]').forEach((el) => {
-  const to = Number(el.dataset.to);
-  const dec = Number(el.dataset.dec || 0);
-  const suffix = el.dataset.suffix || '';
-  el.textContent = '0';
-  el.dataset.val = '0';
-  const io = new IntersectionObserver((entries) => {
-    if (!entries[0].isIntersecting) return;
-    io.disconnect();
-    countUp(el, to, (v) => v.toLocaleString('ko-KR', { minimumFractionDigits: dec, maximumFractionDigits: dec }) + suffix, 800);
-  });
-  io.observe(el);
 });

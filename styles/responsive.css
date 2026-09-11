@@ -46,8 +46,6 @@
   .chart-wrap svg { min-width: 480px; }
   .dist-row { grid-template-columns: 88px 1fr 68px; }
 
-  .tiles { grid-template-columns: minmax(0, 1fr); }
-  .tile .v { font-size: 32px; }
   .hero { padding: var(--s-6) 0 var(--s-5); }
   .papers, .callouts { grid-template-columns: minmax(0, 1fr); }
   .timeline li { grid-template-columns: 52px 64px 1fr; font-size: 13px; }
