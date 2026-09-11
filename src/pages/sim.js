@@ -309,7 +309,7 @@ function renderStep3(root, sc) {
       h('div.race-gantt#raceGantt'),
       h('div.race-log', h('h4', '레이스 로그'), h('div#raceLog'))),
     h('details.fold',
-      h('summary', '레이스 트레이스', h('span.hint', '평균 페이스 대비 누적 시간차 — 팀 전략실이 보는 그래프')),
+      h('summary', '레이스 트레이스', h('span.hint', '평균 페이스 대비 누적 시간차')),
       h('div.fold-body', h('div#trace'))),
     h('details.fold',
       h('summary', '500회 돌려보면?', h('span.hint', '세이프티카 변동을 포함한 몬테카를로')),
