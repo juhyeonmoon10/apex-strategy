@@ -1,9 +1,10 @@
-// 공통 셸 — 헤더·푸터 주입. 3개 페이지가 공유한다.
+// 공통 셸 — 헤더·푸터 주입. 모든 페이지가 공유한다.
 import { h } from './ui/dom.js';
 
 const NAV = [
   ['index.html', '홈'],
   ['sim.html', '시뮬레이터'],
+  ['race.html', '실제 레이스'],
   ['research.html', '연구'],
 ];
 

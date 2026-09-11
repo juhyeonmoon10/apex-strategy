@@ -30,6 +30,7 @@ http://localhost:8124 접속. GitHub Pages에는 이 디렉터리를 그대로 p
 |---|---|
 | `index.html` | 홈 — 시뮬레이터 진입, 레이스 트레이스 미리보기, 계산 방식 |
 | `sim.html` | 시뮬레이터 — **3단계 스텝** (조건 → 전략+근거 → 레이스 리플레이) |
+| `race.html` | 실제 레이스 — 지난 그랑프리를 OpenF1 기록으로 재생, 모델과 대조 |
 | `research.html` | 연구 — 데이터·전처리·방법·결과·검증·함정·한계·재현 |
 
 `sim.html?step=2` 처럼 URL로 단계에 직접 진입할 수 있습니다. 조건과 편집한 전략도 URL에
@@ -51,7 +52,7 @@ COMPOUND.runSelfTest()
 ## 구조
 
 ```
-index.html · sim.html · research.html
+index.html · sim.html · race.html · research.html
 styles/          tokens · base · components · board(전략 보드) · race(리플레이) · responsive
 src/
   shell.js       공통 헤더·푸터
@@ -65,13 +66,16 @@ src/
     trace.js       레이스 트레이스 + 교차 지점 탐지
     selftest.js    검증 12건
   data/          circuits · teams · assets · glossary · trackPaths(서킷 중심선, 자동 생성)
+                 races.js — data/races/*.json 로더 (실제 경기 기록)
   ui/            DOM 렌더링. engine/ 을 import 하지만 그 반대는 절대 없다
     raceReplay.js  스텝 3 — 트랙 위 차 · 타이밍 타워 · 스틴트 간트 · 레이스 로그
+    realRaceView.js  실제 경기 재생 (리타이어·랩다운·적기 중단 처리)
 tools/
   collect.py     OpenF1 → data/laps.csv (랩·스틴트·날씨 조인)
   analyze.py     마모 다중회귀 + 홀드아웃 검증
   calibrate.py   서킷 파라미터 실측 대조
   trace_maps.py  F1 공식 서킷 지도(PNG) → 트랙 중심선 좌표 (numpy 필요)
+  collect_races.py  OpenF1 → data/races/*.json (지난 그랑프리 재생용)
 docs/            기획서, 작업 기록, UI 검수
 ```
 
@@ -95,6 +99,33 @@ lapTime(n) = baseLap + 팀페이스 + 드라이버페이스 + 컴파운드델타
 - **몬테카를로 500회.** 매 회차 모든 전략에 **같은 SC 타임라인**을 줍니다.
 - **교차 지점 탐지.** 스톱 수가 같은 시점끼리만 비교하고, 피트 직후 3랩은 제외합니다.
   안 그러면 "상대가 방금 들어가서 26초 잃은" 순간을 역전으로 잡습니다.
+
+## 실제 레이스 재생
+
+`race.html` 은 끝난 그랑프리를 OpenF1 공개 기록으로 랩 단위 재생합니다.
+시뮬레이션이 아니라 그날 실제로 일어난 일입니다.
+
+```bash
+python tools/collect_races.py --year 2026            # 끝난 경기 전부
+python tools/collect_races.py --year 2026 --circuit Monza
+python tools/collect_races.py --list                 # 받을 수 있는 경기 목록
+python tools/collect_races.py --year 2026 --slow 1.6 # 429 가 나면 느리게
+```
+
+경기당 20~40KB JSON 이 `data/races/` 에 쌓이고 화면에서 고를 때 받아 옵니다.
+담는 것: 드라이버별 실제 스틴트·랩타임·피트스톱, 최종 순위, 그리고 관제 메시지에서
+뽑은 세이프티카·VSC·적기 구간과 사건 기록.
+
+> 적기 함정: 중단된 랩의 `lap_duration` 에는 중단 시간이 통째로 들어 있습니다
+> (몬차 2026 은 4랩이 1,955초). 간격 계산에는 그대로 쓰고, 재생 속도에는
+> 중앙값의 3배로 클램프한 "달린 시간"을 씁니다. 안 그러면 화면이 32분 멈춥니다.
+>
+> 랩다운과 리타이어는 다릅니다. 완주했지만 랩이 모자란 차는 `+1랩` 으로,
+> 리타이어한 차만 순위표에서 내립니다.
+
+아래 "모델과 대조"는 그 드라이버의 실제 컴파운드·스틴트 길이를 우리 비용식에 그대로
+넣어 모델 최적안과 비교합니다. 적기가 있었던 경기는 무손실 타이어 교체 규칙이 우리
+모델에 없어 차이가 실제보다 크게 나오며, 화면에 그렇게 적습니다.
 
 ## 데이터와 검증
 

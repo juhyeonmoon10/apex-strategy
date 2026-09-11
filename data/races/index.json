@@ -1,0 +1,357 @@
+[
+ {
+  "key": "2026-australia",
+  "year": 2026,
+  "circuitId": "australia",
+  "officialName": "FORMULA 1 QATAR AIRWAYS AUSTRALIAN GRAND PRIX 2026",
+  "country": "Australia",
+  "location": "Melbourne",
+  "date": "2026-03-08",
+  "totalLaps": 58,
+  "winner": "George RUSSELL",
+  "winnerCode": "RUS",
+  "bands": [
+   {
+    "type": "vsc",
+    "from": 12,
+    "to": 14
+   },
+   {
+    "type": "vsc",
+    "from": 18,
+    "to": 20
+   },
+   {
+    "type": "vsc",
+    "from": 34,
+    "to": 34
+   }
+  ],
+  "sizeKb": 17.3
+ },
+ {
+  "key": "2026-china",
+  "year": 2026,
+  "circuitId": "china",
+  "officialName": "FORMULA 1 HEINEKEN CHINESE GRAND PRIX 2026",
+  "country": "China",
+  "location": "Shanghai",
+  "date": "2026-03-15",
+  "totalLaps": 56,
+  "winner": "Kimi ANTONELLI",
+  "winnerCode": "ANT",
+  "bands": [
+   {
+    "type": "sc",
+    "from": 10,
+    "to": 14
+   }
+  ],
+  "sizeKb": 14.9
+ },
+ {
+  "key": "2026-japan",
+  "year": 2026,
+  "circuitId": "japan",
+  "officialName": "FORMULA 1 ARAMCO JAPANESE GRAND PRIX 2026",
+  "country": "Japan",
+  "location": "Suzuka",
+  "date": "2026-03-29",
+  "totalLaps": 53,
+  "winner": "Kimi ANTONELLI",
+  "winnerCode": "ANT",
+  "bands": [
+   {
+    "type": "sc",
+    "from": 22,
+    "to": 28
+   }
+  ],
+  "sizeKb": 16.0
+ },
+ {
+  "key": "2026-miami",
+  "year": 2026,
+  "circuitId": "miami",
+  "officialName": "FORMULA 1 CRYPTO.COM MIAMI GRAND PRIX 2026",
+  "country": "United States",
+  "location": "Miami Gardens",
+  "date": "2026-05-03",
+  "totalLaps": 57,
+  "winner": "Kimi ANTONELLI",
+  "winnerCode": "ANT",
+  "bands": [
+   {
+    "type": "sc",
+    "from": 6,
+    "to": 12
+   }
+  ],
+  "sizeKb": 19.4
+ },
+ {
+  "key": "2026-canada",
+  "year": 2026,
+  "circuitId": "canada",
+  "officialName": "FORMULA 1 LENOVO GRAND PRIX DU CANADA 2026",
+  "country": "Canada",
+  "location": "Montréal",
+  "date": "2026-05-24",
+  "totalLaps": 68,
+  "winner": "Kimi ANTONELLI",
+  "winnerCode": "ANT",
+  "bands": [
+   {
+    "type": "vsc",
+    "from": 31,
+    "to": 32
+   },
+   {
+    "type": "vsc",
+    "from": 46,
+    "to": 46
+   },
+   {
+    "type": "vsc",
+    "from": 53,
+    "to": 54
+   }
+  ],
+  "sizeKb": 22.7
+ },
+ {
+  "key": "2026-monaco",
+  "year": 2026,
+  "circuitId": "monaco",
+  "officialName": "FORMULA 1 LOUIS VUITTON GRAND PRIX DE MONACO 2026",
+  "country": "Monaco",
+  "location": "Monte Carlo",
+  "date": "2026-06-07",
+  "totalLaps": 78,
+  "winner": "Kimi ANTONELLI",
+  "winnerCode": "ANT",
+  "bands": [
+   {
+    "type": "sc",
+    "from": 60,
+    "to": 66
+   },
+   {
+    "type": "sc",
+    "from": 66,
+    "to": 68
+   },
+   {
+    "type": "red",
+    "from": 68,
+    "to": 68
+   },
+   {
+    "type": "red",
+    "from": 73,
+    "to": 73
+   },
+   {
+    "type": "red",
+    "from": 73,
+    "to": 78
+   }
+  ],
+  "sizeKb": 28.3
+ },
+ {
+  "key": "2026-barcelona",
+  "year": 2026,
+  "circuitId": "barcelona",
+  "officialName": "FORMULA 1 MSC CRUISES GRAN PREMIO DE BARCELONA-CATALUNYA 2026",
+  "country": "Spain",
+  "location": "Barcelona",
+  "date": "2026-06-14",
+  "totalLaps": 66,
+  "winner": "Lewis HAMILTON",
+  "winnerCode": "HAM",
+  "bands": [
+   {
+    "type": "vsc",
+    "from": 41,
+    "to": 42
+   },
+   {
+    "type": "vsc",
+    "from": 63,
+    "to": 65
+   }
+  ],
+  "sizeKb": 21.8
+ },
+ {
+  "key": "2026-austria",
+  "year": 2026,
+  "circuitId": "austria",
+  "officialName": "FORMULA 1 LENOVO AUSTRIAN GRAND PRIX 2026",
+  "country": "Austria",
+  "location": "Spielberg",
+  "date": "2026-06-28",
+  "totalLaps": 71,
+  "winner": "George RUSSELL",
+  "winnerCode": "RUS",
+  "bands": [
+   {
+    "type": "vsc",
+    "from": 25,
+    "to": 26
+   },
+   {
+    "type": "vsc",
+    "from": 52,
+    "to": 53
+   }
+  ],
+  "sizeKb": 22.4
+ },
+ {
+  "key": "2026-britain",
+  "year": 2026,
+  "circuitId": "britain",
+  "officialName": "FORMULA 1 PIRELLI BRITISH GRAND PRIX 2026",
+  "country": "United Kingdom",
+  "location": "Silverstone",
+  "date": "2026-07-05",
+  "totalLaps": 52,
+  "winner": "Charles LECLERC",
+  "winnerCode": "LEC",
+  "bands": [
+   {
+    "type": "vsc",
+    "from": 22,
+    "to": 22
+   },
+   {
+    "type": "vsc",
+    "from": 39,
+    "to": 39
+   },
+   {
+    "type": "sc",
+    "from": 48,
+    "to": 52
+   },
+   {
+    "type": "sc",
+    "from": 51,
+    "to": 53
+   }
+  ],
+  "sizeKb": 18.6
+ },
+ {
+  "key": "2026-belgium",
+  "year": 2026,
+  "circuitId": "belgium",
+  "officialName": "FORMULA 1 MOËT & CHANDON BELGIAN GRAND PRIX 2026",
+  "country": "Belgium",
+  "location": "Spa-Francorchamps",
+  "date": "2026-07-19",
+  "totalLaps": 45,
+  "winner": "Kimi ANTONELLI",
+  "winnerCode": "ANT",
+  "bands": [
+   {
+    "type": "sc",
+    "from": 1,
+    "to": 5
+   },
+   {
+    "type": "vsc",
+    "from": 18,
+    "to": 18
+   },
+   {
+    "type": "vsc",
+    "from": 20,
+    "to": 21
+   }
+  ],
+  "sizeKb": 16.8
+ },
+ {
+  "key": "2026-hungary",
+  "year": 2026,
+  "circuitId": "hungary",
+  "officialName": "FORMULA 1 AWS HUNGARIAN GRAND PRIX 2026",
+  "country": "Hungary",
+  "location": "Budapest",
+  "date": "2026-07-26",
+  "totalLaps": 70,
+  "winner": "Lando NORRIS",
+  "winnerCode": "NOR",
+  "bands": [
+   {
+    "type": "vsc",
+    "from": 56,
+    "to": 57
+   }
+  ],
+  "sizeKb": 20.8
+ },
+ {
+  "key": "2026-netherlands",
+  "year": 2026,
+  "circuitId": "netherlands",
+  "officialName": "FORMULA 1 HEINEKEN DUTCH GRAND PRIX 2026",
+  "country": "Netherlands",
+  "location": "Zandvoort",
+  "date": "2026-08-23",
+  "totalLaps": 72,
+  "winner": "Lando NORRIS",
+  "winnerCode": "NOR",
+  "bands": [
+   {
+    "type": "red",
+    "from": 2,
+    "to": 3
+   },
+   {
+    "type": "vsc",
+    "from": 55,
+    "to": 57
+   },
+   {
+    "type": "vsc",
+    "from": 70,
+    "to": 70
+   }
+  ],
+  "sizeKb": 24.2
+ },
+ {
+  "key": "2026-italy",
+  "year": 2026,
+  "circuitId": "italy",
+  "officialName": "FORMULA 1 PIRELLI GRAN PREMIO D’ITALIA 2026",
+  "country": "Italy",
+  "location": "Monza",
+  "date": "2026-09-06",
+  "totalLaps": 53,
+  "winner": "Kimi ANTONELLI",
+  "winnerCode": "ANT",
+  "bands": [
+   {
+    "type": "sc",
+    "from": 3,
+    "to": 3
+   },
+   {
+    "type": "red",
+    "from": 3,
+    "to": 4
+   },
+   {
+    "type": "vsc",
+    "from": 28,
+    "to": 29
+   }
+  ],
+  "sizeKb": 17.4
+ }
+]

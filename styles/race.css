@@ -104,3 +104,72 @@
   .rt-head span:nth-child(5), .rt-int { display: none; }
   .rg-row, .rg-axis { grid-template-columns: 84px minmax(0, 1fr); }
 }
+
+/* ============================================================
+   실제 레이스 — 경기 선택, 기준 드라이버, 최종 순위, 모델 대조
+   ============================================================ */
+
+.rr-year { font-size: 13px; color: var(--fg-2); letter-spacing: 0.06em; margin: 0 0 10px; font-weight: 700; }
+.rr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.rr-card { text-align: left; background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius-lg, 10px);
+  padding: 14px 16px; cursor: pointer; color: var(--fg-0); font: inherit; transition: border-color var(--t-fast, 120ms), background var(--t-fast, 120ms); }
+.rr-card:hover { border-color: var(--team); background: var(--bg-2); }
+.rr-card:focus-visible { outline: 2px solid var(--team); outline-offset: 2px; }
+.rr-card-name { font-size: 15px; font-weight: 700; }
+.rr-card-meta { font-size: 12px; color: var(--fg-2); margin-top: 3px; font-family: var(--font-mono); }
+.rr-card-win { font-size: 12px; color: var(--fg-1); margin-top: 6px; }
+.rr-card-flags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.rr-card-flags span { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 3px; letter-spacing: 0.02em; }
+.f-red { background: #f85149; color: #0a0b0d; }
+.f-sc { background: #ffd12e; color: #0a0b0d; }
+.f-vsc { background: #d29922; color: #0a0b0d; }
+.f-green { background: var(--bg-3); color: var(--fg-1); }
+
+.rr-focus { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; flex-wrap: wrap; }
+.rr-focus-label { font-size: 12px; color: var(--fg-2); letter-spacing: 0.04em; }
+.rr-select { background: var(--bg-2); color: var(--fg-0); border: 1px solid var(--border); border-radius: 6px;
+  padding: 7px 10px; font: inherit; font-size: 13px; max-width: 100%; }
+
+.rt-row.out { opacity: 0.45; }
+.rt-row.out .rt-gap { color: var(--fg-2); font-size: 12px; }
+.rg-out { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1px; background: var(--danger); }
+.rg-pit.red { background: var(--danger); width: 3px; }
+.rg-sc.red { background: repeating-linear-gradient(135deg, rgba(248,81,73,0.6) 0 4px, rgba(248,81,73,0.2) 4px 8px); }
+.rh-status.red { background: var(--danger); color: #0a0b0d; }
+
+.rr-table-wrap { overflow-x: auto; }
+.rr-table { width: 100%; min-width: 420px; border-collapse: collapse; font-size: 13px; }
+.rr-table th { text-align: left; font-size: 11px; color: var(--fg-2); font-weight: 600; padding: 0 10px 8px; letter-spacing: 0.04em; }
+.rr-table td { padding: 7px 10px; border-top: 1px solid var(--border); vertical-align: middle; }
+.rr-table th.num, .rr-table td.num { text-align: right; font-family: var(--font-mono); white-space: nowrap; }
+.rr-table td.muted { color: var(--fg-2); }
+.rr-table tr.focus td { background: rgba(255,255,255,0.04); }
+.rr-table .rt-chip { width: 19px; height: 19px; font-size: 11px; margin-right: 3px; }
+
+.rr-cmp { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 10px; }
+.rr-cmp-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 92px; gap: 12px; align-items: center;
+  padding: 10px 14px; border-radius: 7px; background: var(--bg-2); }
+.rr-cmp-row.best { box-shadow: inset 3px 0 0 var(--ok); }
+.rr-cmp-label { font-size: 12px; color: var(--fg-1); font-weight: 600; }
+.rr-cmp-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.rr-chip { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: var(--compound); color: #0a0b0d; white-space: nowrap; }
+.rr-chip.c-SOFT, .rr-chip.c-WET, .rr-chip.c-INTER { color: #fff; }
+.rr-cmp-time { text-align: right; font-size: 13px; color: var(--fg-0); }
+.rr-diff { font-size: var(--fs-explain, 15px); color: var(--fg-0); margin: 0 0 10px; }
+.rr-warn { font-size: 13px; color: var(--danger); margin: 0 0 8px; }
+.rr-note { font-size: 13px; color: var(--fg-1); line-height: 1.6; margin: 0 0 6px; }
+.rr-note.small { font-size: 12px; color: var(--fg-2); }
+.rr-src { font-size: 12px; color: var(--fg-2); margin-top: 20px; }
+
+@media (max-width: 700px) {
+  .rr-cmp-row { grid-template-columns: 1fr; gap: 6px; }
+  .rr-cmp-time { text-align: left; }
+}
+
+/* 실제 레이스는 20대가 넘어 타워가 트랙 맵보다 훨씬 길어진다 — 스크롤로 묶는다 */
+.race-real .rt-rows { max-height: 430px; overflow-y: auto; }
+.race-real .rt-row { height: 44px; font-size: 13px; }
+.race-real .rt-pos { font-size: 16px; }
+.race-real .rg-row + .rg-row { margin-top: 3px; }
+.race-real .rg-bar { height: 18px; }
+.race-real .rl-list { max-height: 300px; }
