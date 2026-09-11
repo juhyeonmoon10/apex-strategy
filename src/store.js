@@ -6,6 +6,7 @@ import { hashSeed } from './engine/rng.js';
 const listeners = new Set();
 
 export const state = {
+  raceKey: null,          // 실제 경기 재현 모드일 때 data/races 의 key
   circuitId: 'britain',
   teamId: 'mercedes',
   driverId: 'russell',
@@ -61,11 +62,11 @@ export function scenarioSeed() {
 
 /* ---------- URL 직렬화 ---------- */
 
-const KEYS = ['circuitId', 'teamId', 'driverId', 'surface', 'trackTemp', 'airTemp', 'humidity', 'grid', 'traffic', 'step'];
+const KEYS = ['raceKey', 'circuitId', 'teamId', 'driverId', 'surface', 'trackTemp', 'airTemp', 'humidity', 'grid', 'traffic', 'step'];
 
 export function toQuery() {
   const p = new URLSearchParams();
-  KEYS.forEach((k) => p.set(k, String(state[k])));
+  KEYS.forEach((k) => { if (state[k] != null) p.set(k, String(state[k])); });
   if (state.myPlan) {
     p.set('plan', state.myPlan.stints.map((s) => `${s.compound[0]}${s.laps}`).join('.'));
   }
@@ -88,6 +89,7 @@ export function fromQuery() {
     if (!p.has(k)) return;
     const v = p.get(k);
     state[k] = ['trackTemp', 'airTemp', 'humidity', 'grid', 'step'].includes(k) ? Number(v) : v;
+    if (k === 'raceKey' && (v === 'null' || v === '')) state[k] = null;
   });
   if (![1, 2, 3].includes(state.step)) state.step = 1;
   // 고대비 모드 플래그(present)는 셸이 처리한다 — 여기서는 보존만

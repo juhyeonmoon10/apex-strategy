@@ -4,7 +4,6 @@ import { h } from './ui/dom.js';
 const NAV = [
   ['index.html', '홈'],
   ['sim.html', '시뮬레이터'],
-  ['race.html', '실제 레이스'],
   ['research.html', '연구'],
 ];
 

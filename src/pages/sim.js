@@ -13,6 +13,9 @@ import { renderDistribution } from '../ui/distribution.js';
 import { renderExplain, initGlossary } from '../ui/explainPanel.js';
 import { renderStrategyBoard } from '../ui/strategyBoard.js';
 import { pitWindows } from '../engine/pitWindow.js';
+import { renderRealRace } from '../ui/realRaceView.js';
+import { loadRaceIndex, loadRace } from '../data/races.js';
+import { buildRealRace, myCarFrom, timelineFromRace, planFromStints, paceOffset } from '../engine/realRace.js';
 
 import { state, set, subscribe, scenarioOf, scenarioSeed, syncUrl, fromQuery } from '../store.js';
 import { CIRCUITS } from '../data/circuits.js';
@@ -46,21 +49,40 @@ const playback = createPlayback();
 function getWindows(sc) {
   const seed = scenarioSeed();
   if (windowsCache.seed !== seed) {
-    windowsCache = { seed, windows: state.plans.map((p) => pitWindows(sc, p, seed)) };
+    windowsCache = { seed, windows: state.plans.map((p) => pitWindows(sc, p, seed, timelineOf(sc))) };
   }
   return windowsCache.windows;
 }
 
 /* ---------- 계산 ---------- */
-function green(sc) { return new Array(sc.circuit.laps).fill('green'); }
+/* ---------- 실제 경기 재현 ----------
+   raceKey 가 있으면 그 경기의 랩 수·노면 온도·중단 구간을 시나리오에 씌운다.
+   추천 탐색·피트 윈도우·시뮬레이션이 전부 같은 타임라인을 쓴다. */
+let realIndex = [];
+let realRace = null;      // data/races 의 경기 JSON
+
+/** 실제 경기 모드면 랩 수를 그 경기에 맞춘 시나리오 */
+function scenarioNow() {
+  const sc = scenarioOf();
+  if (realRace) sc.circuit = { ...sc.circuit, laps: realRace.totalLaps };
+  return sc;
+}
+
+/** 이 시나리오에 쓸 랩별 깃발 타임라인 */
+function timelineOf(sc) {
+  return realRace
+    ? timelineFromRace(realRace.bands, sc.circuit.laps)
+    : new Array(sc.circuit.laps).fill('green');
+}
 
 function recompute() {
-  const sc = scenarioOf();
+  const sc = scenarioNow();
   const seed = scenarioSeed();
-  const plans = searchStrategies(sc, seed);
-  const results = plans.map((p) => simulate(sc, p, seed, green(sc)));
+  const tl = timelineOf(sc);
+  const plans = searchStrategies(sc, seed, tl);
+  const results = plans.map((p) => simulate(sc, p, seed, tl));
   let myPlan = state.myPlan ? refit(state.myPlan, sc.circuit.laps) : null;
-  const myResult = myPlan ? simulate(sc, myPlan, seed, green(sc)) : null;
+  const myResult = myPlan ? simulate(sc, myPlan, seed, tl) : null;
   set({ plans, results, myPlan, myResult, selected: Math.min(state.selected, Math.max(0, plans.length - 1)), mc: null }, 'compute');
 }
 
@@ -79,8 +101,8 @@ function refit(plan, totalLaps) {
 }
 
 function simMine(plan) {
-  const sc = scenarioOf();
-  return simulate(sc, plan, scenarioSeed(), green(sc));
+  const sc = scenarioNow();
+  return simulate(sc, plan, scenarioSeed(), timelineOf(sc));
 }
 
 async function runMc() {
@@ -88,7 +110,7 @@ async function runMc() {
   running = true;
   render();
   await new Promise((r) => setTimeout(r, 16));
-  const mc = runMonteCarlo(scenarioOf(), state.plans, scenarioSeed());
+  const mc = runMonteCarlo(scenarioNow(), state.plans, scenarioSeed());
   running = false;
   set({ mc }, 'mc');
 }
@@ -144,12 +166,49 @@ function contextLine(sc) {
   return `${sc.circuit.track} · ${sc.team.name} / ${sc.driver.name} · ${sc.weather.trackTemp}°C · ${{ dry: '건조', rain: '비', heavy: '폭우' }[sc.weather.surface]}`;
 }
 
+/** 실제 경기로 전환/해제. 서킷·랩 수·노면 온도를 그 경기 값으로 맞춘다. */
+async function setRace(key) {
+  if (!key) {
+    realRace = null;
+    set({ raceKey: null }, 'scenario');
+    return;
+  }
+  set({ raceKey: key }, 'race-loading');
+  try {
+    const data = await loadRace(key);
+    realRace = data;
+    set({
+      raceKey: key,
+      circuitId: data.circuitId,
+      trackTemp: Math.round(data.weather.trackTemp ?? state.trackTemp),
+      surface: data.weather.rain ? state.surface : 'dry',
+    }, 'scenario');
+  } catch (e) {
+    realRace = null;
+    set({ raceKey: null }, 'scenario');
+  }
+}
+
+const circuitNameOf = (id) => (CIRCUITS.find((c) => c.id === id) || {}).name || id;
+
+/** 중단 구간 요약 칩 */
+function bandChips(bands) {
+  const n = (t) => (bands || []).filter((b) => b.type === t).length;
+  const out = [];
+  if (n('red')) out.push(h('span.chip-red', `적기 ${n('red')}회`));
+  if (n('sc')) out.push(h('span.chip-sc', `SC ${n('sc')}회`));
+  if (n('vsc')) out.push(h('span.chip-vsc', `VSC ${n('vsc')}회`));
+  if (!out.length) out.push(h('span.chip-green', '중단 없음'));
+  return out;
+}
+
 /* ---------- 스텝 1 — 조건 ---------- */
 function renderStep1(root, sc) {
   const focusId = document.activeElement && document.activeElement.id;
   const drivers = driversOf(state.teamId);
-  const sel = (opts, value, onchange) =>
-    h('select', { onchange: (e) => onchange(e.target.value) },
+  const sel = (opts, value, onchange, disabled) =>
+    h('select', { onchange: (e) => onchange(e.target.value), disabled: disabled ? 'true' : null,
+      title: disabled ? '실제 경기 모드에서는 그 경기의 서킷으로 고정됩니다' : null },
       opts.map(([v, l]) => h('option', { value: v, selected: v === value }, l)));
   const field = (label, ctrl) => { const id = 'f' + Math.random().toString(36).slice(2, 7); ctrl.id = id; return h('div.field', h('label', { for: id }, label), ctrl); };
   // 숫자 입력. 키 입력마다 재렌더하면 포커스가 날아가므로 change(확정) 시점에만 반영한다.
@@ -170,11 +229,34 @@ function renderStep1(root, sc) {
         h('span.unit', unit)));
   };
 
+  const realOn = !!state.raceKey;
+
   mount(root,
     h('div.sim-head', h('h2.sim-question', '어디서, 누가, 어떤 날씨에 달리나요?')),
+
+    // 실제 경기에 내 전략을 넣어 볼지 먼저 고른다
+    h('div.card.mode-card',
+      h('div.field', h('label', '레이스'),
+        h('div.seg', { role: 'group', 'aria-label': '레이스 종류' },
+          h('button', { type: 'button', 'aria-pressed': String(!realOn), onclick: () => setRace(null) }, '가상 조건'),
+          h('button', { type: 'button', 'aria-pressed': String(realOn), onclick: () => setRace((realIndex[realIndex.length - 1] || {}).key || null) }, '실제 경기'))),
+      realOn
+        ? h('div.mode-body',
+          field('경기', sel(realIndex.map((r) => [r.key, `${r.year} ${circuitNameOf(r.circuitId)} · ${r.date}`]), state.raceKey, (v) => setRace(v))),
+          realRace
+            ? h('div.mode-meta',
+              h('span', h('b', String(realRace.totalLaps)), ' 랩'),
+              h('span', '노면 ', h('b', `${realRace.weather.trackTemp ?? '—'}`), '°C'),
+              ...bandChips(realRace.bands),
+              h('span.mode-note', '이 경기의 세이프티카·VSC·적기 구간을 그대로 넣고, 실제 상대들과 같은 순위표에서 비교합니다'))
+            : h('div.mode-meta', h('span.mode-note', '경기 기록을 불러오는 중…')))
+        : h('div.mode-body', h('span.mode-note', '서킷과 날씨를 직접 정하고, 세이프티카는 확률로 발생시킵니다')),
+    ),
+
     h('div.cond-grid',
       h('div.card',
-        field('서킷', sel(CIRCUITS.map((c) => [c.id, c.name]), state.circuitId, (v) => set({ circuitId: v }, 'scenario'))),
+        field('서킷', sel(CIRCUITS.map((c) => [c.id, c.name]), state.circuitId,
+          (v) => set({ circuitId: v }, 'scenario'), realOn)),
         h('div.circuit-meta',
           h('span', h('b', String(sc.circuit.laps)), ' 랩'),
           h('span', h('b', sc.circuit.lengthKm.toFixed(3)), ' km'),
@@ -277,7 +359,7 @@ function renderBuilderInto(sc) {
 
 /** 전략 편집 커밋 — 보드·스테퍼는 두고 근거·빌더·선택 표시만 갱신 */
 function renderPlanPartial() {
-  const sc = scenarioOf();
+  const sc = scenarioNow();
   renderExplainInto(sc);
   renderBuilderInto(sc);
   document.querySelectorAll('.board-row').forEach((row, i) => {
@@ -290,6 +372,7 @@ function renderPlanPartial() {
 
 /* ---------- 스텝 3 — 레이스 ---------- */
 function renderStep3(root, sc) {
+  if (realRace) return renderStep3Real(root, sc);
   const entries = state.plans.map((p, i) => ({ plan: p, result: state.results[i] }));
   if (state.myPlan && state.myResult) entries.push({ plan: state.myPlan, result: state.myResult });
   trace = buildTrace(entries);
@@ -337,6 +420,89 @@ function renderStep3(root, sc) {
 }
 
 
+/**
+ * 실제 경기 모드의 스텝 3.
+ * 내 전략을 시뮬레이션한 결과를 그 경기의 실제 필드에 끼워 넣어 순위를 낸다.
+ * 기준이 어긋나지 않도록 적기 중단분을 양쪽에서 같은 값으로 뺀다 (engine/realRace.js).
+ */
+function renderStep3Real(root, sc) {
+  const plan = state.myPlan || state.plans[state.selected];
+  const result = state.myPlan ? state.myResult : state.results[state.selected];
+  const dataColor = resolveAccent(sc.team.colors.team, 'data');
+  const label = `${sc.driver.name} · ${plan ? plan.label : ''}`;
+
+  // 기준 페이스 맞추기 — 우승자의 실제 전략을 우리 모델로 돌려 실제 기록과의 차이를 랩당으로 나눈다.
+  // 이걸 하지 않으면 근사 초기값 서킷에서 모델이 랩당 몇 초 빨라 순위가 의미를 잃는다.
+  const base = buildRealRace(realRace);
+  const ref = base.drivers.find((d) => d.pos === 1 && !d.dnf) || base.drivers[0];
+  const refPlan = ref ? planFromStints(ref.stints, sc.circuit.laps) : null;
+  const refSim = refPlan ? simulate(sc, refPlan, scenarioSeed(), timelineOf(sc)) : null;
+  const offset = refSim && !refSim.invalid && ref.racing.length === sc.circuit.laps
+    ? paceOffset(ref.racing[ref.racing.length - 1], refSim.total, sc.circuit.laps)
+    : 0;
+
+  const myCar = plan && result && !result.invalid
+    ? myCarFrom(result, plan, { label, colour: dataColor, team: sc.team.name, offset })
+    : null;
+  const rr = buildRealRace(realRace, myCar);
+  const finish = myCar ? rr.standingsAt(rr.totalLaps).find((r) => r.driver.mine) : null;
+  const winner = ref || rr.race.drivers[0];
+
+  mount(root,
+    h('div.sim-head',
+      h('h2.sim-question', finish
+        ? `${realRace.meetingName} 에 이 전략으로 나갔다면 ${finish.pos}위`
+        : `${realRace.meetingName} 재현`),
+      h('div.sim-context',
+        h('span', `${contextLine(sc)} · 실제 경기 ${realRace.date}`),
+        h('button.btn.btn-ghost.btn-sm', { type: 'button', onclick: () => goStep(2) }, '전략 바꾸기'))),
+
+    finish ? h('div.real-verdict',
+      h('div.rv-pos', h('b.num', String(finish.pos)), h('span', '위 / ' + rr.drivers.filter((d) => !d.dnf).length + '대')),
+      h('div.rv-txt',
+        h('p', `${plan.label}(${plan.stints.map((st) => COMPOUND_KO[st.compound]).join(' → ')})로 `
+          + `${realRace.totalLaps}랩을 달렸을 때의 자리입니다. `
+          + (finish.pos === 1
+            ? `실제 우승자 ${winner.name} 보다 앞섭니다.`
+            : `선두와 ${finish.lapsBehind > 0 ? `${finish.lapsBehind}랩` : `${finish.gap.toFixed(1)}초`} 차이입니다.`)),
+        h('p.rv-note', '상대는 그날 실제로 기록한 랩타임 그대로이고, 내 차만 우리 모델로 계산합니다. '
+          + '세이프티카·VSC 구간은 그 경기 기록을 그대로 넣었습니다. '
+          + (offset
+            ? `내 차의 기본 페이스는 우승자 ${winner.code} 의 실제 전략을 같은 모델로 돌려 랩당 ${offset > 0 ? '+' : ''}${offset.toFixed(2)}초 맞췄습니다. 팀·드라이버 능력치 차이는 이 보정에 흡수되므로, 순위 차이에는 전략 차이만 남습니다.`
+            : '기준 페이스 보정은 적용하지 못했습니다. 순위에 서킷 페이스 오차가 섞여 있습니다.')
+          + (rr.reds.size ? ' 적기 중단은 느린 랩으로만 반영되고, 중단 중 무손실 타이어 교체는 모델에 없습니다.' : '')))) : null,
+
+    h('div.race.race-real',
+      h('div.race-head#raceHead'),
+      h('div.race-transport', h('div#transport')),
+      h('div.race-main', h('div.race-map#raceMap'), h('div.race-tower#raceTower')),
+      h('div.race-gantt#raceGantt'),
+      h('div.race-log', h('h4', '레이스 로그'), h('div#raceLog'))),
+
+    h('details.fold', { open: 'true' },
+      h('summary', '최종 순위', h('span.hint', myCar ? '내 차를 넣은 시뮬레이션 순위' : '실제 결과')),
+      h('div.fold-body', h('div#raceResult'))),
+
+    h('p.rr-src', `기록 출처: OpenF1 (${realRace.collected} 수집) · 세션 ${realRace.sessionKey}`),
+
+    h('div.sim-foot',
+      h('button.btn.btn-ghost', { type: 'button', onclick: () => goStep(2) }, '← 전략'),
+      h('button.btn.btn-ghost', { type: 'button', onclick: () => { playback.reset(); goStep(1); } }, '처음으로')));
+
+  trace = null;
+  traceCtl = null;
+  playback.setTotal(rr.totalLaps);
+  const view = renderRealRace(
+    { head: $('#raceHead'), map: $('#raceMap'), tower: $('#raceTower'), gantt: $('#raceGantt'), log: $('#raceLog'), result: $('#raceResult') },
+    rr, { focusNum: myCar ? -1 : (rr.drivers[0] || {}).num });
+  replayCtl = view;
+  transportCtl = renderTransport($('#transport'), playback);
+  const v = playback.lap;
+  lastIntLap = v == null ? null : Math.floor(v);
+  view.set(v);
+  transportCtl.sync(lastIntLap);
+}
+
 playback.subscribe((v) => {
   if (replayCtl) replayCtl.set(v);               // 매 프레임 — 트랙 위 차 위치
   const lap = v == null ? null : Math.floor(v);
@@ -350,7 +516,7 @@ playback.onStateChange(() => { if (state.step === 3 && $('#transport')) transpor
 
 /* ---------- 렌더 ---------- */
 function render() {
-  const sc = scenarioOf();
+  const sc = scenarioNow();
   applyTeamTheme(sc.team);
   renderStepper();
   const root = $('#view');
@@ -375,6 +541,18 @@ subscribe((reason) => {
 fromQuery();
 recompute();
 render();
+
+// 실제 경기 목록은 비동기로 받는다. URL 에 raceKey 가 있으면 그 경기까지 불러온다.
+(async () => {
+  realIndex = await loadRaceIndex();
+  if (state.raceKey && realIndex.some((r) => r.key === state.raceKey)) {
+    await setRace(state.raceKey);
+  } else if (state.raceKey) {
+    set({ raceKey: null }, 'scenario');
+  } else if (state.step === 1) {
+    render();                    // 목록이 채워졌으니 모드 카드를 다시 그린다
+  }
+})();
 
 window.COMPOUND = { state, runSelfTest, recompute, render, goStep };
 console.info('%cCOMPOUND', 'color:#27f4d2;font-weight:700', '— COMPOUND.runSelfTest() 로 엔진 검증');

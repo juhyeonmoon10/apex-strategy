@@ -15,9 +15,11 @@ const TOL = 1.5;    // 최적 대비 허용 손실(초)
  *   pitLap  현재 계획의 피트 랩
  *   from,to 윈도우 (포함)
  */
-export function pitWindows(scenario, plan, seed) {
+export function pitWindows(scenario, plan, seed, sharedTimeline) {
   const totalLaps = scenario.circuit.laps;
-  const green = new Array(totalLaps).fill('green');
+  // 실제 경기를 재현할 때는 그 경기의 중단 구간을 넣어 윈도우를 계산한다
+  const green = sharedTimeline && sharedTimeline.length === totalLaps
+    ? sharedTimeline : new Array(totalLaps).fill('green');
   const base = simulate(scenario, plan, seed, green);
   if (base.invalid) return [];
 

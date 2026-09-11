@@ -173,3 +173,35 @@
 .race-real .rg-row + .rg-row { margin-top: 3px; }
 .race-real .rg-bar { height: 18px; }
 .race-real .rl-list { max-height: 300px; }
+
+/* ---- 실제 경기 모드 — 스텝 1 카드와 스텝 3 판정 ---- */
+.mode-card { margin-bottom: var(--s-4); }
+.mode-body { margin-top: var(--s-4); }
+.mode-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: var(--s-3); font-size: 13px; color: var(--fg-1); }
+.mode-meta b { color: var(--fg-0); font-family: var(--font-mono); }
+.mode-note { font-size: 12px; color: var(--fg-2); line-height: 1.5; flex: 1 1 100%; }
+.chip-red, .chip-sc, .chip-vsc, .chip-green { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 3px; }
+.chip-red { background: var(--danger); color: #0a0b0d; }
+.chip-sc { background: #ffd12e; color: #0a0b0d; }
+.chip-vsc { background: #d29922; color: #0a0b0d; }
+.chip-green { background: var(--bg-3); color: var(--fg-1); }
+
+.real-verdict { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-5); align-items: center;
+  padding: 16px 20px; margin-bottom: var(--s-4); border-radius: var(--radius-lg, 10px);
+  background: var(--bg-1); border: 1px solid var(--border); border-left: 4px solid var(--team); }
+.rv-pos { display: flex; align-items: baseline; gap: 4px; }
+.rv-pos b { font-size: 52px; line-height: 1; font-weight: 800; color: var(--fg-0); }
+.rv-pos span { font-size: 14px; color: var(--fg-1); }
+.rv-txt p { font-size: var(--fs-explain, 15px); line-height: 1.6; color: var(--fg-0); margin: 0; }
+.rv-txt p.rv-note { font-size: 12px; color: var(--fg-2); margin-top: 6px; line-height: 1.5; }
+
+/* 내 차 강조 */
+.rt-row.mine { background: rgba(255,255,255,0.07); box-shadow: inset 3px 0 0 var(--team); }
+.rt-row.mine .rt-name { font-weight: 800; }
+.rg-row.mine .rg-name { color: var(--fg-0); font-weight: 800; }
+.rr-table tr.mine td { background: rgba(255,255,255,0.06); font-weight: 700; }
+.rm-car.mine circle { stroke: #fff; stroke-width: 4; }
+
+@media (max-width: 700px) {
+  .real-verdict { grid-template-columns: 1fr; gap: var(--s-3); }
+}

@@ -95,7 +95,7 @@ export function renderRealRace(slots, rr, opts = {}) {
   const geo = trackGeometry(race.circuitId);
   const log = buildLog(rr);
   const focus = drivers.find((d) => d.num === opts.focusNum) || drivers[0];
-  const onTrack = drivers.slice(0, 20);   // 트랙 맵은 20대까지 — 더 찍으면 라벨이 겹친다
+  const onTrack = drivers.slice(0, 20).concat(rr.myCar && !drivers.slice(0, 20).includes(rr.myCar) ? [rr.myCar] : []);
   const shown = drivers;                 // 타워·간트는 전원
 
   /* 헤더 */
@@ -119,7 +119,7 @@ export function renderRealRace(slots, rr, opts = {}) {
   const sf = [p0[0] + (nx / nl) * 16, p0[1] + (ny / nl) * 16, p0[0] - (nx / nl) * 16, p0[1] - (ny / nl) * 16];
 
   const cars = onTrack.map((drv) => {
-    const g = s('g', { class: 'rm-car' + (drv === focus ? ' focus' : '') });
+    const g = s('g', { class: 'rm-car' + (drv === focus ? ' focus' : '') + (drv.mine ? ' mine' : '') });
     g.append(
       s('circle', { r: 11, fill: drv.colour, stroke: '#0a0b0d', 'stroke-width': 3 }),
       s('text', { x: 15, y: -11, class: 'rm-label' }, drv.code));
@@ -160,7 +160,7 @@ export function renderRealRace(slots, rr, opts = {}) {
       class: b.type, style: { left: `${((b.from - 1) / totalLaps) * 100}%`, width: `${((b.to - b.from + 1) / totalLaps) * 100}%` },
     })));
     const cur = h('i.rg-cur'); cursors.push(cur); bar.append(cur);
-    return h('div.rg-row', { class: drv === focus ? 'focus' : '' },
+    return h('div.rg-row', { class: `${drv === focus ? 'focus' : ''} ${drv.mine ? 'mine' : ''}` },
       h('div.rg-name', h('i.rg-dot', { style: { background: drv.colour } }), drv.code), bar);
   });
   const ticks = [];
@@ -172,20 +172,30 @@ export function renderRealRace(slots, rr, opts = {}) {
   const list = h('ul.rl-list');
   mount(slots.log, now, list);
 
-  /* 최종 순위 */
+  /* 최종 순위 — 내 차가 있으면 시뮬레이션 순위, 없으면 공식 결과 */
   if (slots.result) {
-    const finishers = drivers.filter((x) => x.pos != null).sort((a, b) => a.pos - b.pos);
+    const rows = rr.myCar
+      ? rr.standingsAt(totalLaps).map((r) => ({
+        drv: r.driver, pos: r.pos, out: r.out,
+        gapText: r.out ? `${r.driver.officialLaps}랩 리타이어`
+          : r.pos === 1 ? fmtRaceTime(r.time)
+          : r.lapsBehind > 0 ? `+${r.lapsBehind}랩` : `+${r.gap.toFixed(1)}초`,
+      }))
+      : drivers.filter((x) => x.pos != null).sort((a, b) => a.pos - b.pos).map((x) => ({
+        drv: x, pos: x.pos, out: x.dnf,
+        gapText: x.dnf ? `${x.officialLaps}랩 리타이어`
+          : x.pos === 1 ? fmtRaceTime(x.total || 0)
+          : x.gapFinal != null ? `+${Number(x.gapFinal).toFixed(3)}` : '',
+      }));
     mount(slots.result,
       h('div.rr-table-wrap', h('table.rr-table',
         h('thead', h('tr', h('th', '순위'), h('th', '드라이버'), h('th', '팀'), h('th', '타이어 전략'), h('th.num', '간격'))),
-        h('tbody', finishers.map((x) => h('tr', { class: x === focus ? 'focus' : '' },
-          h('td.num', x.dnf ? '—' : String(x.pos)),
-          h('td', h('i.rg-dot', { style: { background: x.colour } }), ` ${x.name}`),
-          h('td.muted', x.team || ''),
-          h('td', x.stints.map((st) => h('b', { class: `rt-chip c-${st.compound}` }, LETTER[st.compound]))),
-          h('td.num', x.dnf ? `${x.officialLaps}랩 리타이어`
-            : x.pos === 1 ? fmtRaceTime(x.total || 0)
-            : x.gapFinal != null ? `+${Number(x.gapFinal).toFixed(3)}` : '')))))));
+        h('tbody', rows.map((r) => h('tr', { class: `${r.drv === focus ? 'focus' : ''} ${r.drv.mine ? 'mine' : ''}` },
+          h('td.num', r.out ? '—' : String(r.pos)),
+          h('td', h('i.rg-dot', { style: { background: r.drv.colour } }), ` ${r.drv.name}`),
+          h('td.muted', r.drv.team || ''),
+          h('td', r.drv.stints.map((st) => h('b', { class: `rt-chip c-${st.compound}` }, LETTER[st.compound]))),
+          h('td.num', r.gapText)))))));
   }
 
   let lastLap = -2;

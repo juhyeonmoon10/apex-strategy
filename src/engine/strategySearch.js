@@ -89,9 +89,11 @@ const STYLES = [
  * 추천 3안을 반환한다.
  * 평가는 SC 없는 결정론적 조건에서 수행한다 — 추천이 매번 흔들리면 안 되기 때문.
  */
-export function searchStrategies(scenario, seed) {
+export function searchStrategies(scenario, seed, sharedTimeline) {
   const totalLaps = scenario.circuit.laps;
-  const greenTimeline = new Array(totalLaps).fill('green');
+  // 실제 경기를 재현할 때는 그 경기의 SC/VSC 구간을 넣어 후보를 평가한다
+  const greenTimeline = sharedTimeline && sharedTimeline.length === totalLaps
+    ? sharedTimeline : new Array(totalLaps).fill('green');
   const candidates = generateCandidates(scenario);
 
   const scored = [];
