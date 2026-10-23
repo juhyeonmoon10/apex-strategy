@@ -12,6 +12,7 @@
 import { searchStrategies } from './strategySearch.js';
 import { simulate } from './simulate.js';
 import { validatePlan } from './rules.js';
+import { stintLives } from './docModel.js';
 
 export function compareModels(scenario, seed, timeline) {
   const base = { ...scenario, model: 'base' };
@@ -33,5 +34,9 @@ export function compareModels(scenario, seed, timeline) {
   const B = evalPlan(pickB);
   const D = evalPlan(pickD);
   const same = !!(pickB && pickD) && JSON.stringify(pickB.stints) === JSON.stringify(pickD.stints);
-  return { B, D, same };
+  // 차이 설명에 쓰는 문서 F1 수명 — 두 추천에 나온 컴파운드 전부
+  const used = new Set(['SOFT', 'MEDIUM', 'HARD']);
+  [pickB, pickD].forEach((p) => p && p.stints.forEach((s) => used.add(s.compound)));
+  const lives = stintLives(doc, [...used]);
+  return { B, D, same, lives };
 }

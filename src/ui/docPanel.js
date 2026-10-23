@@ -250,13 +250,34 @@ export function renderCompare(root, cmp) {
   } else {
     notes.push(`기존 모델로 계산하면 ${faster(bb, db, false)}, 문서 수식으로 계산하면 ${faster(bd, dd, true)}.`);
   }
-  const violB = !cmp.B.underDoc.legal ? cmp.B.underDoc.errors.find((e) => e.includes('수명')) : null;
-  if (violB) {
-    notes.push(`기존 추천은 문서 수식의 타이어 수명을 넘어 문서 모드에서는 후보가 되지 못합니다 — ${violB}`
-      + (bd < dd ? ' 랩타임만 보면 더 빠르지만, 그래서 문서 수식은 수명 안에 드는 다른 전략을 골랐습니다.' : ''));
-  }
   const violD = !cmp.D.underBase.legal ? cmp.D.underBase.errors[0] : null;
   if (violD) notes.push(`문서 추천은 기존 모델의 조건에 걸립니다 — ${violD}`);
+
+  // 왜 다른가 — 수명을 넘는 스틴트, 스톱 수, 클리프 처리, 온도 보정 순으로
+  const why = [];
+  if (!cmp.same) {
+    const over = cmp.B.plan.stints
+      .map((st, i) => ({ st, i, L: cmp.lives[st.compound] }))
+      .filter((x) => x.L && x.st.laps > x.L.limit);
+    if (over.length) {
+      const stints = over.map((x) => `${x.i + 1}스틴트 ${COMPOUND_KO[x.st.compound]} ${x.st.laps}랩`).join(', ');
+      const limits = [...new Set(over.map((x) => `${COMPOUND_KO[x.st.compound]} ${x.L.limit}랩 · ${TERM_KO[x.L.binding]}`))].join(', ');
+      why.push(`기존 추천의 ${stints}이 문서 F1 수명(${limits})을 넘습니다. 문서 수식은 이런 스틴트를 허용하지 않아 다른 전략을 고릅니다.`
+        + (bd < dd ? ' 랩타임만 보면 문서 식으로 계산해도 기존 추천이 더 빠릅니다.' : ''));
+    }
+    const sb = cmp.B.plan.stints.length - 1, sd = cmp.D.plan.stints.length - 1;
+    why.push(sb === sd
+      ? `스톱 수는 ${sb}스톱으로 같고, 스틴트 길이와 컴파운드 배분이 다릅니다.`
+      : `스톱 수가 ${sb}스톱에서 ${sd}스톱으로 ${sd > sb ? '늘었습니다. 짧아진 스틴트를 피트스톱 한 번으로 메웁니다' : '줄었습니다. 수명이 긴 컴파운드로 스틴트를 늘립니다'}.`);
+    if (over.some((x) => x.L.binding === 'cliff')) {
+      why.push('기존 모델은 클리프 이후 손실이 3초에서 멈춰, 클리프를 넘겨 타도 손해가 작게 계산됩니다. '
+        + '문서 F1 에서는 클리프 τ 가 수명의 한 항이라 넘길 수 없습니다. 1단계 계수 표에서 τ 를 바꾸면 차이가 어떻게 변하는지 볼 수 있습니다.');
+    }
+    const tt = cmp.D.doc.tempTime;
+    why.push(tt > 0.05
+      ? `문서 수식의 시간에는 F4 온도 보정 ${tt.toFixed(1)}초가 들어 있습니다. 모든 전략에 같게 붙어 순위는 바꾸지 않습니다.`
+      : '이 조건에서 F4 온도 보정은 0초라, 시간 차이는 전부 마모·컴파운드 식과 전략 차이에서 나옵니다.');
+  }
 
   mount(root,
     h('div.doc-table-wrap',
@@ -266,6 +287,8 @@ export function renderCompare(root, cmp) {
           h('tr', h('th', '기존 모델'), h('td', h('div.rr-cmp-chips', chips(cmp.B.plan))), cell(cmp.B.base, null, true), cell(cmp.B.doc, cmp.B.underDoc, false)),
           h('tr', h('th', '조사 문서 수식'), h('td', h('div.rr-cmp-chips', chips(cmp.D.plan))), cell(cmp.D.base, cmp.D.underBase, false), cell(cmp.D.doc, null, true))))),
     h('ul.doc-notes', notes.map((n) => h('li', n))),
+    why.length ? h('h4.doc-h', '왜 다른가') : null,
+    why.length ? h('ul.doc-notes', why.map((n) => h('li', n))) : null,
     h('p.mode-note', '같은 조건·같은 시드에서 깃발 없이 계산합니다. 굵은 칸은 각 모델이 자기 식으로 계산한 자기 추천입니다.'));
 }
 
