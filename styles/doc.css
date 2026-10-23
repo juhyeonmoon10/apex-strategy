@@ -1,0 +1,49 @@
+/* ============================================================
+   조사 문서 수식 — 모델 선택 카드 · 계수 표 · 수명 표 · 열화 곡선 · 두 모델 비교
+   ============================================================ */
+
+.doc-formulas { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px;
+  font-family: var(--font-mono); font-size: 12.5px; color: var(--fg-1); }
+.doc-formulas b { font-family: var(--font-ui); color: var(--fg-0); margin-right: 6px; font-size: 12px; }
+
+.doc-coef { margin-top: var(--s-4); border-top: 1px solid var(--border); padding-top: var(--s-3); }
+.doc-coef summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--fg-0); display: flex; align-items: center; gap: 8px; }
+.doc-changed { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; background: var(--warn); color: #0a0b0d; }
+
+.doc-table-wrap { overflow-x: auto; margin-top: var(--s-3); }
+.doc-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 440px; }
+.doc-table th, .doc-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
+.doc-table thead th { font-size: 11px; color: var(--fg-2); font-weight: 600; letter-spacing: 0.02em; }
+.doc-table thead th small, .doc-table td small { display: block; font-size: 10px; color: var(--fg-2); font-weight: 400; margin-top: 2px; }
+.doc-table tbody th { font-weight: 700; color: var(--fg-0); white-space: nowrap; }
+.doc-table td.num { font-family: var(--font-mono); text-align: right; white-space: nowrap; }
+.doc-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; outline: 1px solid #0a0b0d; vertical-align: -1px; }
+.doc-num { width: 84px; background: var(--bg-2); color: var(--fg-0); border: 1px solid var(--border); border-radius: 5px;
+  padding: 5px 7px; font: inherit; font-family: var(--font-mono); font-size: 12px; }
+.doc-num:focus { outline: 2px solid var(--team); outline-offset: 1px; }
+
+.doc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px 14px; margin-top: var(--s-4); }
+.doc-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--fg-2); }
+.doc-grid .doc-num { width: 100%; box-sizing: border-box; }
+.doc-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: var(--s-4) 0 var(--s-2); }
+
+/* 수명 표 — 이긴 항을 강조 */
+.doc-life td.bind { color: var(--fg-0); font-weight: 800; background: rgba(255,255,255,0.06); box-shadow: inset 0 -2px 0 var(--team); }
+.doc-life td.life { font-weight: 800; color: var(--fg-0); font-family: var(--font-mono); }
+.doc-lead { font-size: var(--fs-explain, 15px); color: var(--fg-0); line-height: 1.6; margin: 0; }
+.doc-h { font-family: var(--font-ui); font-size: 13px; color: var(--fg-0); margin: var(--s-5) 0 var(--s-2); }
+.doc-temp { font-family: var(--font-mono); font-size: 13px; color: var(--fg-1); margin: 0; line-height: 1.7; }
+.doc-temp b { color: var(--fg-0); }
+
+.doc-chart-wrap { overflow-x: auto; }
+.doc-chart { width: 100%; min-width: 480px; height: auto; display: block; }
+.dc-grid { stroke: var(--border); stroke-width: 1; }
+.dc-tick { font: 11px var(--font-mono); fill: var(--fg-2); }
+.dc-lab { font: 700 11px var(--font-ui); paint-order: stroke; stroke: var(--bg-1); stroke-width: 4; }
+
+/* 두 모델 비교 */
+.doc-cmp td.own { font-weight: 800; color: var(--fg-0); }
+.doc-viol { display: inline-block !important; margin-left: 6px; font-size: 10px !important; font-weight: 700;
+  padding: 1px 6px; border-radius: 3px; background: var(--danger); color: #0a0b0d !important; }
+.doc-notes { margin: var(--s-3) 0 0; padding-left: 18px; font-size: 14px; line-height: 1.6; color: var(--fg-0); }
+.doc-notes li + li { margin-top: 4px; }

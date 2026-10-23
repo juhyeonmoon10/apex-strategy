@@ -1,6 +1,7 @@
 // FIA 규정 검증 + 전략 상식 경고
 import { SLICKS, COMPOUND_KO, TYRE } from './params.js';
 import { RACE } from './params.js';
+import { stintLives } from './docModel.js';
 
 /**
  * @returns {{ legal:boolean, errors:string[], warnings:string[] }}
@@ -28,12 +29,20 @@ export function validatePlan(plan, scenario) {
     }
   }
 
+  // 조사 문서 수식 모델: F1 "실제 스틴트 = min(√(2·T_pit/k₁), a_cliff, h₀/Δh_lap)" 를 수명 상한으로 쓴다
+  const lives = scenario.model === 'doc' ? stintLives(scenario, [...new Set(stints.map((s) => s.compound))]) : null;
+  const TERM_KO = { econ: '경제적 스틴트 √(2·T_pit/k₁)', cliff: '클리프 a_cliff', tread: '트레드 소진 h₀/Δh_lap' };
+
   stints.forEach((s, i) => {
     if (s.laps < RACE.minStintLaps) {
       errors.push(`${i + 1}스틴트가 ${s.laps}랩입니다. 최소 ${RACE.minStintLaps}랩 이상이어야 합니다.`);
     }
-    const cliff = TYRE[s.compound].cliffLap;
-    if (s.laps > cliff + 6) {
+    if (lives && lives[s.compound] && s.laps > lives[s.compound].limit) {
+      const L = lives[s.compound];
+      errors.push(`${i + 1}스틴트: ${COMPOUND_KO[s.compound]} ${s.laps}랩 — 문서 공식 수명 ${L.limit}랩(${TERM_KO[L.binding]})을 넘습니다.`);
+    }
+    const cliff = lives ? scenario.doc.tyre[s.compound].tau : TYRE[s.compound].cliffLap;
+    if (!lives && s.laps > cliff + 6) {
       warnings.push(
         `${i + 1}스틴트: ${COMPOUND_KO[s.compound]} ${s.laps}랩 — 클리프(${cliff}랩)를 ${s.laps - cliff}랩 넘겼습니다. 후반 페이스가 급격히 떨어집니다.`
       );

@@ -4,6 +4,7 @@ import { simulate } from './simulate.js';
 import { validatePlan } from './rules.js';
 import { buildSafetyCarTimeline } from './safetyCar.js';
 import { mulberry32 } from './rng.js';
+import { stintLives } from './docModel.js';
 
 /** 드라이/웨트에 따라 사용 가능한 컴파운드 */
 function availableCompounds(surface) {
@@ -31,6 +32,7 @@ function generateCandidates(scenario) {
   const totalLaps = circuit.laps;
   const pool = availableCompounds(weather.surface);
   const candidates = [];
+  const lives = scenario.model === 'doc' ? stintLives(scenario, pool) : null;
 
   for (let stops = 1; stops <= 3; stops++) {
     const n = stops + 1;
@@ -52,6 +54,31 @@ function generateCandidates(scenario) {
           id: `${combo.join('-')}-${laps.join('_')}`,
           stints: combo.map((c, i) => ({ compound: c, laps: laps[i] })),
         });
+      }
+
+      // 문서 모델: 균등 분할은 대부분 수명 상한(F1)을 넘는다. 컴파운드별 수명에 비례해
+      // 랩을 나눈 후보를 더해 "각 타이어를 수명만큼 쓰는" 전략도 탐색되게 한다.
+      if (lives) {
+        const caps = combo.map((c) => (lives[c] ? lives[c].limit : totalLaps));
+        const capSum = caps.reduce((a, b) => a + b, 0);
+        if (capSum >= totalLaps) {
+          const prop = caps.map((cap) => Math.max(RACE.minStintLaps, Math.floor((cap / capSum) * totalLaps)));
+          let rest = totalLaps - prop.reduce((a, b) => a + b, 0);
+          for (let i = 0; rest !== 0 && i < 200; i++) {
+            const k = i % prop.length;
+            if (rest > 0 && prop[k] < caps[k]) { prop[k]++; rest--; }
+            else if (rest < 0 && prop[k] > RACE.minStintLaps) { prop[k]--; rest++; }
+          }
+          for (const d of [-2, 0, 2]) {
+            const laps = prop.slice();
+            laps[0] += d; laps[laps.length - 1] -= d;
+            if (laps.some((l) => l < RACE.minStintLaps)) continue;
+            candidates.push({
+              id: `${combo.join('-')}-${laps.join('_')}-life`,
+              stints: combo.map((c, i) => ({ compound: c, laps: laps[i] })),
+            });
+          }
+        }
       }
     }
   }

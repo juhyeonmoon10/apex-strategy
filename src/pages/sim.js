@@ -17,10 +17,12 @@ import { renderRealRace } from '../ui/realRaceView.js';
 import { loadRaceIndex, loadRace } from '../data/races.js';
 import { buildRealRace, myCarFrom, timelineFromRace, planFromStints, paceOffset } from '../engine/realRace.js';
 import { buildIncidents, FLAG_KO } from '../engine/incidents.js';
+import { renderModelCard, renderDocPanel, renderCompare } from '../ui/docPanel.js';
+import { compareModels } from '../engine/modelCompare.js';
 import { DRIVERS } from '../data/teams.js';
 import { mulberry32 } from '../engine/rng.js';
 
-import { state, set, subscribe, scenarioOf, scenarioSeed, syncUrl, fromQuery } from '../store.js';
+import { state, set, subscribe, scenarioOf, scenarioSeed, syncUrl, fromQuery, saveDocOverrides } from '../store.js';
 import { CIRCUITS } from '../data/circuits.js';
 import { TEAMS, driversOf } from '../data/teams.js';
 import { simulate, fmtRaceTime, fmtGap } from '../engine/simulate.js';
@@ -50,11 +52,19 @@ let windowsCache = { seed: null, windows: null };   // 피트 윈도우는 시�
 const playback = createPlayback();
 
 function getWindows(sc) {
-  const seed = scenarioSeed();
+  const seed = `${scenarioSeed()}|${sc.model}|${JSON.stringify(state.docOverrides)}|${state.raceKey}`;
   if (windowsCache.seed !== seed) {
-    windowsCache = { seed, windows: state.plans.map((p) => pitWindows(sc, p, seed, timelineOf(sc))) };
+    windowsCache = { seed, windows: state.plans.map((p) => pitWindows(sc, p, scenarioSeed(), timelineOf(sc))) };
   }
   return windowsCache.windows;
+}
+
+/** 두 모델 비교 — 탐색을 두 번 돌리므로 조건이 같으면 다시 계산하지 않는다 */
+let compareCache = { key: null, value: null };
+function getCompare(sc) {
+  const key = `${scenarioSeed()}|${JSON.stringify(state.docOverrides)}|${state.raceKey}|${sc.circuit.laps}`;
+  if (compareCache.key !== key) compareCache = { key, value: compareModels(sc, scenarioSeed(), timelineOf(sc)) };
+  return compareCache.value;
 }
 
 /* ---------- 계산 ---------- */
@@ -199,7 +209,7 @@ function renderStepper() {
 }
 
 function contextLine(sc) {
-  return `${sc.circuit.track} · ${sc.team.name} / ${sc.driver.name} · ${sc.weather.trackTemp}°C · ${{ dry: '건조', rain: '비', heavy: '폭우' }[sc.weather.surface]}`;
+  return `${sc.circuit.track} · ${sc.team.name} / ${sc.driver.name} · ${sc.weather.trackTemp}°C · ${{ dry: '건조', rain: '비', heavy: '폭우' }[sc.weather.surface]}${sc.model === 'doc' ? ' · 조사 문서 수식' : ''}`;
 }
 
 /** 실제 경기로 전환/해제. 서킷·랩 수·노면 온도를 그 경기 값으로 맞춘다. */
@@ -289,6 +299,13 @@ function renderStep1(root, sc) {
         : h('div.mode-body', h('span.mode-note', '서킷과 날씨를 직접 정하고, 세이프티카는 확률로 발생시킵니다')),
     ),
 
+    // 랩타임을 어떤 식으로 계산할지 — 기존 모델 / 조사 문서 수식
+    renderModelCard({
+      model: sc.model, doc: sc.doc, overrides: state.docOverrides,
+      onModel: (m) => set({ model: m }, 'scenario'),
+      onOverrides: (o) => { saveDocOverrides(o); set({ docOverrides: o }, 'scenario'); },
+    }),
+
     h('div.cond-grid',
       h('div.card',
         field('서킷', sel(CIRCUITS.map((c) => [c.id, c.name]), state.circuitId,
@@ -355,9 +372,20 @@ function renderStep2(root, sc) {
       h('summary', '직접 바꿔보기', h('span.hint', '피트 마커를 드래그하거나 ← → 키')),
       h('div.fold-body', h('div#builder'))),
 
+    sc.model === 'doc' ? h('details.fold', { open: 'true' },
+      h('summary', '조사 문서 수식으로 본 타이어', h('span.hint', 'F1 수명 · F3·F4 온도 · F2 열화 곡선')),
+      h('div.fold-body', h('div#docPanel'))) : null,
+
+    h('details.fold', { open: sc.model === 'doc' ? 'true' : null },
+      h('summary', '두 모델 비교', h('span.hint', '기존 모델 추천과 문서 수식 추천을 서로의 식으로 다시 계산')),
+      h('div.fold-body', h('div#modelCompare'))),
+
     h('div.sim-foot',
       h('button.btn.btn-ghost', { type: 'button', onclick: () => goStep(1) }, '← 조건'),
       h('button.btn.btn-primary', { type: 'button', onclick: () => goStep(3) }, '레이스 보기 →')));
+
+  if ($('#docPanel')) renderDocPanel($('#docPanel'), sc);
+  renderCompare($('#modelCompare'), getCompare(sc));
 
   // 피렐리식 전략 보드. 윈도우는 피트 랩을 ±5 옮겨 시뮬레이션해 실제로 계산 (시나리오당 1회 캐시)
   renderStrategyBoard($('#board'), {

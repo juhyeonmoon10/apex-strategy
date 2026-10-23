@@ -7,6 +7,10 @@
 import { COMPOUND_KO, TYRE } from './params.js';
 import { fmtGap } from './simulate.js';
 import { eun, eul, gwa } from './josa.js';
+import {
+  docParams, docDegradation, docCompoundTerm, stintLives, wearMultiplier,
+  circuitSpeed, tyreTemperature, tempPenalty, LIFE_TERM_KO,
+} from './docModel.js';
 
 // 조사 처리는 josa.js 로 분리했다 (trace.js 와 공유)
 
@@ -18,13 +22,16 @@ export function explainPlan(scenario, plan, res, allPlans, allRes) {
   const out = [];
   const { circuit, team, driver, weather } = scenario;
   const stops = res.stops;
+  const isDoc = scenario.model === 'doc';
 
   // 1) 시간 예산 분해 — 어디서 시간을 잃었나
   out.push({
     tag: '시간 예산',
     text:
       `총 주행 시간 중 피트스톱으로 ${res.pitTime.toFixed(1)}초, ` +
-      `타이어 마모로 ${res.degTime.toFixed(1)}초를 잃었습니다. ` +
+      `타이어 마모로 ${res.degTime.toFixed(1)}초` +
+      (isDoc && res.tempTime > 0.05 ? `, 타이어 온도 보정으로 ${res.tempTime.toFixed(1)}초` : '') +
+      `를 잃었습니다. ` +
       `연료가 줄면서 마지막 랩은 첫 랩보다 약 ` +
       `${(circuit.fuelPerLap * (circuit.laps - 1)).toFixed(1)}초 빨라집니다.`,
   });
@@ -64,8 +71,11 @@ export function explainPlan(scenario, plan, res, allPlans, allRes) {
     });
   }
 
+  // 4·5) 문서 수식 모드 — 클리프·노면 온도 대신 수명(F1)과 타이어 온도(F3·F4)로 설명한다
+  if (isDoc) out.push(...explainDoc(scenario, plan));
+
   // 4) 클리프 — 스틴트가 한계를 넘었나
-  plan.stints.forEach((s, i) => {
+  if (!isDoc) plan.stints.forEach((s, i) => {
     const cliff = TYRE[s.compound].cliffLap;
     if (s.laps > cliff) {
       out.push({
@@ -78,10 +88,10 @@ export function explainPlan(scenario, plan, res, allPlans, allRes) {
     }
   });
 
-  // 5) 노면 온도와 마모의 관계
+  // 5) 노면 온도와 마모의 관계 — 문서 모드는 explainDoc 의 타이어 온도 문장이 대신한다
   const hottest = plan.stints.reduce((a, s) =>
     TYRE[s.compound].idealTemp < TYRE[a.compound].idealTemp ? s : a, plan.stints[0]);
-  const excess = weather.trackTemp - TYRE[hottest.compound].idealTemp;
+  const excess = isDoc ? 0 : weather.trackTemp - TYRE[hottest.compound].idealTemp;
   if (excess > 4) {
     out.push({
       tag: '노면 온도',
@@ -126,11 +136,61 @@ export function explainPlan(scenario, plan, res, allPlans, allRes) {
   return out;
 }
 
+/** 문서 수식 모드의 근거 문장 — 수명에 가장 가까운 스틴트와 타이어 온도 */
+function explainDoc(scenario, plan) {
+  const out = [];
+  const P = scenario.doc || docParams();
+  const lives = stintLives(scenario, [...new Set(plan.stints.map((s) => s.compound))]);
+
+  // 수명 대비 가장 꽉 찬 스틴트 하나만 말한다
+  let tight = null;
+  plan.stints.forEach((s, i) => {
+    const L = lives[s.compound];
+    if (!L) return;
+    const ratio = s.laps / L.limit;
+    if (!tight || ratio > tight.ratio) tight = { i, s, L, ratio };
+  });
+  if (tight) {
+    const { i, s, L } = tight;
+    const left = L.limit - s.laps;
+    out.push({
+      tag: '타이어 수명',
+      text:
+        `문서 F1 로 계산한 ${COMPOUND_KO[s.compound]} 수명은 ${L.limit}랩이고, ${LIFE_TERM_KO[L.binding]} 항이 가장 짧습니다. ` +
+        `${i + 1}스틴트 ${s.laps}랩은 ` +
+        (left <= 0 ? '수명을 끝까지 씁니다.' : `수명까지 ${left}랩을 남깁니다.`) +
+        (L.binding === 'cliff' ? ` ${L.limit}랩을 넘기면 열화 기울기가 랩당 ${(P.tyre[s.compound].b2).toFixed(2)}초 더 가팔라집니다.` : ''),
+    });
+  }
+
+  const air = scenario.weather.airTemp ?? 22;
+  const v = circuitSpeed(scenario.circuit);
+  const T = tyreTemperature(P, scenario.weather.trackTemp, air, v);
+  const pen = tempPenalty(P, T);
+  out.push({
+    tag: '타이어 온도',
+    text:
+      `노면 ${scenario.weather.trackTemp}°C · 기온 ${air}°C · 평균 속도 ${v.toFixed(0)} m/s 를 F3 에 넣으면 타이어 온도는 ${T.toFixed(0)}°C 입니다. ` +
+      (pen > 0
+        ? `적정 범위 ${P.temp.tMin}~${P.temp.tMax}°C 를 벗어나 F4 로 랩당 ${pen.toFixed(2)}초가 더해집니다. 모든 컴파운드에 같게 붙으므로 전략 순위는 바뀌지 않습니다.`
+        : `적정 범위 ${P.temp.tMin}~${P.temp.tMax}°C 안이라 온도 보정은 없습니다.`),
+  });
+  return out;
+}
+
 /** 첫 피트 시점에서 신품 타이어가 벌어주는 랩당 시간 */
 function freshTyreGain(plan, scenario, firstPitLap) {
   const oldC = plan.stints[0].compound;
   const newC = plan.stints[1] ? plan.stints[1].compound : oldC;
   const age = plan.stints[0].laps;
+  if (scenario.model === 'doc') {
+    // 문서 수식: 헌 타이어 F2 열화 − 새 타이어 F2 열화 + F5 컴파운드 차이
+    const P = scenario.doc || docParams();
+    const mult = wearMultiplier(scenario);
+    const medLap = scenario.circuit.baseLap + scenario.team.pace + scenario.driver.pace;
+    return docDegradation(P, oldC, age, mult) - docDegradation(P, newC, 1, mult)
+      + docCompoundTerm(P, oldC, medLap) - docCompoundTerm(P, newC, medLap);
+  }
   const t = TYRE[oldC];
   const n = TYRE[newC];
   const wornLoss = t.wear * age * scenario.circuit.degMultiplier * scenario.team.degMultiplier;

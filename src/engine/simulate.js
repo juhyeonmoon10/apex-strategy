@@ -58,6 +58,7 @@ export function simulate(scenario, plan, seed, sharedTimeline, retireLap) {
   let cumulative = gridLoss(grid);
   let pitTime = 0;
   let degTime = 0;
+  let tempTime = 0;     // 문서 모델의 F4 온도 보정 누적 (기존 모델은 0)
 
   const stopAt = retireLap && retireLap >= 1 && retireLap <= totalLaps ? retireLap : null;
 
@@ -72,10 +73,12 @@ export function simulate(scenario, plan, seed, sharedTimeline, retireLap) {
     const { total, parts } = lapTime({
       circuit, team, driver, weather, traffic,
       compound, age: effAge, lap, totalLaps, scStatus, noise,
+      model: scenario.model, doc: scenario.doc,
     });
 
     cumulative += total;
     degTime += parts.deg;
+    tempTime += parts.temp || 0;
 
     let pit = 0;
     if (pits.has(lap)) {
@@ -123,6 +126,8 @@ export function simulate(scenario, plan, seed, sharedTimeline, retireLap) {
     stops: plan.stints.length - 1,
     pitTime,
     degTime,
+    tempTime,
+    model: scenario.model || 'base',
     fastestLap: laps.reduce((m, l) => (l.time < m.time ? l : m), laps[0]),
     avgLap: cumulative / totalLaps,
   };

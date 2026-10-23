@@ -2,11 +2,23 @@
 import { circuitById, CIRCUITS } from './data/circuits.js';
 import { teamById, driversOf, driverById } from './data/teams.js';
 import { hashSeed } from './engine/rng.js';
+import { docParams } from './engine/docModel.js';
+
+// 조사 문서 수식의 계수 수정값 — 표가 커서 URL 대신 이 브라우저에만 저장한다
+const DOC_KEY = 'compound.docOverrides';
+function loadDocOverrides() {
+  try { return JSON.parse(localStorage.getItem(DOC_KEY) || 'null') || {}; } catch { return {}; }
+}
+export function saveDocOverrides(o) {
+  try { localStorage.setItem(DOC_KEY, JSON.stringify(o || {})); } catch { /* 저장 불가 환경 */ }
+}
 
 const listeners = new Set();
 
 export const state = {
   raceKey: null,          // 실제 경기 재현 모드일 때 data/races 의 key
+  model: 'base',          // 'base' 기존 모델 | 'doc' 조사 문서 수식
+  docOverrides: loadDocOverrides(),
   circuitId: 'britain',
   teamId: 'mercedes',
   driverId: 'russell',
@@ -51,6 +63,8 @@ export function scenarioOf() {
     },
     grid: state.grid,
     traffic: state.traffic,
+    model: state.model === 'doc' ? 'doc' : 'base',
+    doc: docParams(state.docOverrides),
   };
 }
 
@@ -64,7 +78,7 @@ export function scenarioSeed() {
 
 /* ---------- URL 직렬화 ---------- */
 
-const KEYS = ['raceKey', 'myRisk', 'rivalRisk', 'circuitId', 'teamId', 'driverId', 'surface', 'trackTemp', 'airTemp', 'humidity', 'grid', 'traffic', 'step'];
+const KEYS = ['raceKey', 'model', 'myRisk', 'rivalRisk', 'circuitId', 'teamId', 'driverId', 'surface', 'trackTemp', 'airTemp', 'humidity', 'grid', 'traffic', 'step'];
 
 export function toQuery() {
   const p = new URLSearchParams();

@@ -8,6 +8,11 @@ import { TEAMS, DRIVERS } from '../data/teams.js';
 import { TYRE } from './params.js';
 import { buildIncidents } from './incidents.js';
 import { mulberry32 } from './rng.js';
+import { validatePlan } from './rules.js';
+import {
+  docParams, tempPenalty, compoundCoefficient, docDegradation, stintLives,
+  tyreTemperature, trackTemperatureFrom, wearAfter,
+} from './docModel.js';
 
 function baseScenario(circuitId = 'britain') {
   const circuit = CIRCUITS.find((c) => c.id === circuitId);
@@ -161,6 +166,64 @@ export function runSelfTest(log = true) {
       pass: r.retired === true && r.laps.length === 20 && r.retireLap === 20,
       detail: `${r.laps.length}랩에서 종료`,
     };
+  });
+
+  // ── 조사 문서 수식 — 문서에 적힌 예시 값으로 맞춰 본다 ──
+  const P = docParams();
+  const near = (a, b, eps = 1e-3) => Math.abs(a - b) < eps;
+
+  check('문서 F4: 90~110°C, a=b=0.004 일 때 120°C → +0.4초, 100°C → 0초', () => {
+    const hot = tempPenalty(P, 120), mid = tempPenalty(P, 100), cold = tempPenalty(P, 80);
+    return { pass: near(hot, 0.4) && mid === 0 && near(cold, 0.4), detail: `120°C ${hot.toFixed(3)} · 100°C ${mid} · 80°C ${cold.toFixed(3)}` };
+  });
+
+  check('문서 F5: 89.8 / 90.2 / 90.6 초 → k = 0.9956 / 1 / 1.0044', () => {
+    const s = compoundCoefficient(89.8, 90.2), h = compoundCoefficient(90.6, 90.2);
+    return { pass: near(s, 0.9956, 1e-4) && near(h, 1.0044, 1e-4), detail: `소프트 ${s.toFixed(5)} · 하드 ${h.toFixed(5)}` };
+  });
+
+  check('문서 F2: τ 이전 기울기 β₁, 이후 β₁ + β₂', () => {
+    const t = P.tyre.MEDIUM;
+    const before = docDegradation(P, 'MEDIUM', t.tau) - docDegradation(P, 'MEDIUM', t.tau - 1);
+    const after = docDegradation(P, 'MEDIUM', t.tau + 2) - docDegradation(P, 'MEDIUM', t.tau + 1);
+    return { pass: near(before, t.k1) && near(after, t.k1 + t.b2), detail: `이전 ${before.toFixed(4)} · 이후 ${after.toFixed(4)}` };
+  });
+
+  check('문서 F3: 타이어 온도 ↔ 노면 온도 식이 서로 역함수', () => {
+    const T = tyreTemperature(P, 37, 24, 60);
+    const back = trackTemperatureFrom(P, T, 24, 60);
+    return { pass: near(back, 37), detail: `노면 37°C → 타이어 ${T.toFixed(1)}°C → 노면 ${back.toFixed(2)}°C` };
+  });
+
+  check('문서 F1·F6: 수명 = 세 항의 최솟값, 트레드 항에서 누적 마모 = h₀', () => {
+    const docSc = { ...sc, model: 'doc', doc: P };
+    const lives = stintLives(docSc);
+    const bad = Object.entries(lives).filter(([, l]) => l.limit !== Math.floor(Math.min(l.econ, l.cliff, l.tread)));
+    const worn = wearAfter(P, 'HARD', sc.circuit.lengthKm, lives.HARD.tread);
+    return {
+      pass: bad.length === 0 && near(worn, P.h0),
+      detail: Object.entries(lives).map(([c, l]) => `${c} ${l.limit}(${l.binding})`).join(' · ') + ` · 하드 ${lives.HARD.tread.toFixed(1)}랩 마모 ${worn.toFixed(3)}mm`,
+    };
+  });
+
+  check('문서 수식 모드: 24개 서킷 모두 수명 안의 전략을 찾는다', () => {
+    const bad = [];
+    for (const c of CIRCUITS) {
+      const s = { ...baseScenario(c.id), model: 'doc', doc: P };
+      const plans = searchStrategies(s, 11);
+      if (plans.length < 1) { bad.push(`${c.id}(후보 없음)`); continue; }
+      const v = validatePlan(plans[0], s);
+      const r = simulate(s, plans[0], 11);
+      if (!v.legal || r.invalid || !Number.isFinite(r.total)) bad.push(c.id);
+    }
+    return { pass: bad.length === 0, detail: bad.length ? `실패: ${bad.join(', ')}` : `${CIRCUITS.length}개 서킷 전부 정상` };
+  });
+
+  check('기존 모델은 그대로: model 을 안 주면 base 와 같은 결과', () => {
+    const plan = { id: 't', label: '', stints: [{ compound: 'MEDIUM', laps: 26 }, { compound: 'HARD', laps: 26 }] };
+    const a = simulate(sc, plan, 3, green);
+    const b = simulate({ ...sc, model: 'base', doc: P }, plan, 3, green);
+    return { pass: a.total === b.total && b.tempTime === 0, detail: `${a.total.toFixed(3)} / ${b.total.toFixed(3)}` };
   });
 
   const passed = results.filter((r) => r.pass).length;
