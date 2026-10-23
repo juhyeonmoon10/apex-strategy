@@ -1,0 +1,99 @@
+/* 모델 비교 페이지 — 그래프 위주, 글은 최소 */
+.cmp-page { --m-base: #8b72e8; --m-doc: #17a491; }
+.cmp-vs { color: var(--fg-2); font-weight: 600; margin: 0 0.15em; }
+
+.cmp-legend { display: flex; gap: var(--s-4); margin-top: var(--s-4); font-size: 14px; color: var(--fg-1); flex-wrap: wrap; }
+.cmp-legend span { display: inline-flex; align-items: center; gap: var(--s-2); }
+.cmp-key { display: inline-block; width: 18px; height: 4px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.cmp-key.base { background: repeating-linear-gradient(90deg, var(--m-base) 0 5px, transparent 5px 8px); }
+.cmp-key.doc { background: var(--m-doc); }
+.cmp-cond { margin-top: var(--s-2); font-size: var(--fs-caption); color: var(--fg-2); }
+.cmp-loading { margin-top: var(--s-7); color: var(--fg-1); font-family: var(--font-mono); }
+
+/* 숫자 타일 */
+.cmp-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s-3); margin-top: var(--s-6); }
+@media (max-width: 860px) { .cmp-tiles { grid-template-columns: repeat(2, 1fr); } }
+.cmp-tile { background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--s-4) var(--s-4) var(--s-3); }
+.cmp-big { font-family: var(--font-display); font-weight: 800; font-size: 36px; line-height: 1; white-space: nowrap; color: var(--fg-0); font-variant-numeric: tabular-nums; }
+.cmp-small { margin-top: var(--s-2); font-size: 13px; color: var(--fg-1); }
+
+/* 섹션 */
+.cmp-sec { margin-top: var(--s-8); }
+.cmp-sec h2 { display: flex; align-items: baseline; gap: var(--s-3); font-size: 24px; }
+.cmp-sec h2 .n { font-family: var(--font-mono); font-size: 13px; color: var(--fg-2); }
+.cmp-note { margin-top: var(--s-2); font-size: 13px; color: var(--fg-1); }
+.cmp-axis { margin-top: var(--s-2); font-size: var(--fs-caption); color: var(--fg-2); }
+
+/* 작은 그래프 3개 */
+.cmp-multiples { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-4); margin-top: var(--s-4); }
+.cmp-fig { margin: 0; background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--s-3); }
+.cmp-fig figcaption { display: flex; align-items: center; gap: var(--s-2); font-weight: 700; font-size: 14px; flex-wrap: wrap; }
+.cmp-fig-note { font-weight: 400; font-size: 12px; color: var(--fg-1); margin-left: auto; }
+.cmp-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 2px var(--bg-1); }
+.cmp-svg { width: 100%; height: auto; display: block; margin-top: var(--s-2); color: var(--fg-1); }
+.cmp-svg.wide { margin-top: var(--s-4); background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+
+.g-grid { stroke: var(--border); stroke-width: 1; }
+.g-axis { stroke: var(--border-strong); stroke-width: 1; }
+.g-tick { font: 10px var(--font-mono); fill: var(--fg-2); }
+.g-lab { font: 700 11px var(--font-ui); paint-order: stroke; stroke: var(--bg-1); stroke-width: 4px; stroke-linejoin: round; }
+.g-ban { fill: rgba(248, 81, 73, 0.07); }
+.g-ok { fill: rgba(23, 164, 145, 0.10); }
+.g-bar { fill: var(--fg-2); }
+.g-bar.over { fill: var(--soft); opacity: 0.75; }
+.g-dot { stroke: var(--bg-1); stroke-width: 2; }
+
+/* 간트 */
+.cmp-gantt { margin-top: var(--s-4); display: grid; gap: 6px; }
+.cmp-gantt-head { display: grid; grid-template-columns: 110px 1fr 36px; gap: var(--s-3); font-size: 12px; color: var(--fg-1); }
+.cmp-gantt-head span:last-child { text-align: center; }
+.cmp-grow { display: grid; grid-template-columns: 110px 1fr 36px; align-items: center; gap: var(--s-3); }
+.cmp-gname { font-size: 13px; color: var(--fg-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmp-gbars { display: grid; gap: 3px; }
+.cmp-bar { display: flex; gap: 2px; height: 16px; padding-left: 8px; position: relative; }
+.cmp-bar::before { content: ''; position: absolute; left: 0; top: 3px; bottom: 3px; width: 4px; border-radius: 2px; }
+.cmp-bar.base::before { background: var(--m-base); }
+.cmp-bar.doc::before { background: var(--m-doc); }
+.cmp-seg { background: var(--compound); border-radius: 4px; color: var(--bg-0); font: 700 10px/16px var(--font-mono); text-align: center; overflow: hidden; min-width: 0; }
+.cmp-gstop { font: 700 13px var(--font-mono); color: var(--fg-2); text-align: center; }
+.cmp-gstop.up { color: var(--fg-0); }
+.cmp-gstop.down { color: var(--fg-0); }
+
+/* 스톱 수 */
+.cmp-stops { display: flex; gap: 2px; margin-top: var(--s-4); height: 64px; }
+.cmp-sseg { border-radius: 4px; padding: var(--s-2) var(--s-3); display: flex; flex-direction: column; justify-content: center; min-width: 0; overflow: hidden; }
+.cmp-sseg b { font-family: var(--font-display); font-size: 28px; line-height: 1; }
+.cmp-sseg span { font-size: 12px; white-space: nowrap; }
+.cmp-sseg.more { background: var(--m-doc); color: var(--bg-0); }
+.cmp-sseg.same { background: var(--bg-3); color: var(--fg-0); }
+.cmp-sseg.less { background: var(--m-base); color: var(--bg-0); }
+
+/* 시간 막대 */
+.cmp-tbars { margin-top: var(--s-4); display: grid; gap: 4px; }
+.cmp-trow { display: grid; grid-template-columns: 110px 1fr 56px; align-items: center; gap: var(--s-3); }
+.cmp-tname { font-size: 13px; color: var(--fg-1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmp-ttrack { display: flex; gap: 2px; height: 14px; }
+.cmp-tfill { background: var(--m-doc); border-radius: 0 4px 4px 0; }
+.cmp-tfill.temp { background: repeating-linear-gradient(135deg, var(--m-doc) 0 3px, transparent 3px 6px); border-radius: 0 4px 4px 0; }
+.cmp-ttrack .cmp-tfill:first-child:not(:last-child) { border-radius: 0; }
+.cmp-tval { font: 700 13px var(--font-mono); color: var(--fg-0); text-align: right; font-variant-numeric: tabular-nums; }
+
+/* 원인 */
+.cmp-cause { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); margin-top: var(--s-4); }
+.cmp-cause div { background: var(--bg-1); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--s-4); display: grid; gap: var(--s-2); }
+.cmp-cause b { font-family: var(--font-display); font-size: 22px; }
+.cmp-cause span { font-size: 15px; color: var(--fg-0); }
+.cmp-table { margin-top: var(--s-7); }
+
+/* 툴팁 */
+.cmp-tip { position: fixed; z-index: 50; pointer-events: none; background: var(--bg-3); color: var(--fg-0); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 6px 10px; font-size: 12px; max-width: 280px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4); }
+
+@media (max-width: 860px) {
+  .cmp-multiples { grid-template-columns: 1fr; }
+  .cmp-cause { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .cmp-grow, .cmp-trow { grid-template-columns: 76px 1fr 40px; gap: var(--s-2); }
+  .cmp-gname, .cmp-tname { font-size: 12px; }
+  .cmp-big { font-size: 32px; }
+}

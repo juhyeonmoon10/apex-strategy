@@ -16,7 +16,7 @@
   .page { padding: var(--s-5) var(--s-3) var(--s-7); }
   .topbar { padding: 0 var(--s-3); gap: var(--s-3); }
   .nav { gap: 0; overflow-x: auto; }
-  .nav a { padding: 6px 9px; font-size: 13px; }
+  .nav a { padding: 6px 7px; font-size: 13px; }
 
   .stepper { gap: var(--s-2); }
   .step { padding: 6px; }
@@ -51,4 +51,9 @@
   .timeline li { grid-template-columns: 52px 64px 1fr; font-size: 13px; }
   .sim-foot { flex-direction: column-reverse; align-items: stretch; }
   .sim-foot .btn { justify-content: center; }
+}
+
+/* 메뉴가 넷이라 아주 좁은 화면에서는 로고 글자를 숨긴다 */
+@media (max-width: 420px) {
+  .brand-name { display: none; }
 }
