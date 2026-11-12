@@ -231,11 +231,6 @@ export function renderCompare(root, cmp) {
     mount(root, h('p.empty', '이 조건에서는 두 모델 중 하나가 조건을 만족하는 전략을 찾지 못했습니다.'));
     return;
   }
-  const chips = (plan) => plan.stints.map((st) => h('span.rr-chip', { class: `c-${st.compound}` }, `${COMPOUND_KO[st.compound]} ${st.laps}`));
-  const cell = (res, check, isOwn) => h('td.num', { class: isOwn ? 'own' : '' },
-    res && !res.invalid ? fmtRaceTime(res.total) : '—',
-    check && !check.legal ? h('small.doc-viol', '수명 초과') : null);
-
   const bb = cmp.B.base.total, bd = cmp.B.doc.total, db = cmp.D.base.total, dd = cmp.D.doc.total;
   // 어느 쪽이 빠른지 부호를 보고 문장을 고른다. last 면 문장을 끝맺는다.
   const faster = (tB, tD, last) => {
@@ -279,17 +274,53 @@ export function renderCompare(root, cmp) {
       : '이 조건에서 F4 온도 보정은 0초라, 시간 차이는 전부 마모·컴파운드 식과 전략 차이에서 나옵니다.');
   }
 
+  // 같은 식(기존/문서)으로 계산한 두 추천의 시간 차 — 카드 안 각 줄의 비교 기준
+  const total = (plan) => plan.stints.reduce((a, st) => a + st.laps, 0);
+  const bar = (plan) => {
+    const n = total(plan);
+    return h('div.mc-barwrap', h('div.mc-bar', plan.stints.map((st) => h('div.mc-seg', { class: `c-${st.compound}`, style: { flexGrow: String(st.laps) } },
+      h('span', `${COMPOUND_KO[st.compound]} ${st.laps}`)))),
+    h('div.mc-bar-axis', h('span', '1랩'), ...plan.stints.slice(0, -1).map((_, i) => {
+      const lap = plan.stints.slice(0, i + 1).reduce((a, st) => a + st.laps, 0);
+      return h('span.mc-pit', { style: { left: `${(lap / n) * 100}%` } }, `피트 ${lap}랩`);
+    }), h('span', `${n}랩`)));
+  };
+  const timeRow = (label, res, other, check, isOwn) => {
+    const ok = res && !res.invalid;
+    const d = ok && other && !other.invalid ? res.total - other.total : null;
+    const delta = d == null ? null
+      : Math.abs(d) < 0.05 ? h('span.mc-delta.tie', '같음')
+      : d < 0 ? h('span.mc-delta.win', `${Math.abs(d).toFixed(1)}초 빠름`)
+      : h('span.mc-delta.lose', `+${d.toFixed(1)}초`);
+    return h('div.mc-row', { class: isOwn ? 'own' : '' },
+      h('div.mc-row-lab', label, isOwn ? h('small', '자기 식') : null),
+      h('div.mc-row-val',
+        h('span.mc-time', ok ? fmtRaceTime(res.total) : '—'),
+        delta,
+        check && !check.legal ? h('span.doc-viol', '수명 초과') : null));
+  };
+  const card = (title, side, other, ownKey) => h('div.mc-card', { class: ownKey === 'base' ? 'is-base' : 'is-doc' },
+    h('div.mc-card-head', h('h4', title), h('span', `${side.plan.stints.length - 1}스톱`)),
+    bar(side.plan),
+    timeRow('기존 모델로 계산', side.base, other.base, ownKey === 'doc' ? side.underBase : null, ownKey === 'base'),
+    timeRow('문서 수식으로 계산', side.doc, other.doc, ownKey === 'base' ? side.underDoc : null, ownKey === 'doc'));
+
+  // 판정 — 식마다 어느 추천이 빠른지 한눈에
+  const verdict = (label, tB, tD) => {
+    const d = tD - tB;
+    const who = Math.abs(d) < 0.05 ? '두 추천 같음' : `${d > 0 ? '기존' : '문서'} 추천이 ${Math.abs(d).toFixed(1)}초 빠름`;
+    return h('div.mc-verdict', h('span', label), h('b', who));
+  };
+
   mount(root,
-    h('div.doc-table-wrap',
-      h('table.doc-table.doc-cmp',
-        h('thead', h('tr', h('th', '추천한 모델'), h('th', '전략'), h('th', '기존 모델로 계산'), h('th', '문서 수식으로 계산'))),
-        h('tbody',
-          h('tr', h('th', '기존 모델'), h('td', h('div.rr-cmp-chips', chips(cmp.B.plan))), cell(cmp.B.base, null, true), cell(cmp.B.doc, cmp.B.underDoc, false)),
-          h('tr', h('th', '조사 문서 수식'), h('td', h('div.rr-cmp-chips', chips(cmp.D.plan))), cell(cmp.D.base, cmp.D.underBase, false), cell(cmp.D.doc, null, true))))),
+    cmp.same ? null : h('div.mc-verdicts', verdict('기존 모델로 계산하면', bb, db), verdict('문서 수식으로 계산하면', bd, dd)),
+    h('div.mc-cards',
+      card('기존 모델의 추천', cmp.B, cmp.D, 'base'),
+      card('조사 문서 수식의 추천', cmp.D, cmp.B, 'doc')),
     h('ul.doc-notes', notes.map((n) => h('li', n))),
     why.length ? h('h4.doc-h', '왜 다른가') : null,
     why.length ? h('ul.doc-notes', why.map((n) => h('li', n))) : null,
-    h('p.mode-note', '같은 조건·같은 시드에서 깃발 없이 계산합니다. 굵은 칸은 각 모델이 자기 식으로 계산한 자기 추천입니다.'));
+    h('p.mode-note', '같은 조건·같은 시드에서 깃발 없이 계산합니다. 각 시간 옆의 차이는 같은 식으로 계산한 다른 모델의 추천과 비교한 값이고, 테두리 줄은 각 모델이 자기 식으로 계산한 자기 추천입니다.'));
 }
 
 export { DOC_MODEL };
