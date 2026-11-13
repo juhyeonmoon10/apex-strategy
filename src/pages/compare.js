@@ -1,4 +1,4 @@
-// 모델 비교 — 기존 모델과 조사 문서 수식의 차이를 그래프로.
+// 수식 비교 — 빅데이터 수식과 수학 수식의 차이를 그래프로.
 // 숫자는 전부 페이지를 열 때 엔진으로 다시 계산한다 (하드코딩 없음). 시드 고정이라 항상 같은 결과.
 import { mountShell } from '../shell.js';
 import { applyTeamTheme } from '../ui/theme.js';
@@ -19,8 +19,8 @@ applyTeamTheme(teamById('mercedes'));
 const SEED = 11;
 const SLICK = ['SOFT', 'MEDIUM', 'HARD'];
 const SHORT = { SOFT: 'S', MEDIUM: 'M', HARD: 'H' };
-const BASE_C = '#8b72e8';   // 기존 모델 — 다크 배경 검증 통과 (dataviz validate_palette)
-const DOC_C = '#17a491';    // 조사 문서 수식
+const BASE_C = '#8b72e8';   // 빅데이터 수식 — 다크 배경 검증 통과 (dataviz validate_palette)
+const DOC_C = '#17a491';    // 수학 수식
 const NS = 'http://www.w3.org/2000/svg';
 const P = docParams();
 
@@ -109,8 +109,8 @@ function heroTiles(rows, real) {
   const tile = (big, small) => h('div.cmp-tile', h('div.cmp-big', big), h('div.cmp-small', small));
   return h('div.cmp-tiles',
     tile(`${diff}/${rows.length}`, '서킷에서 다른 전략'),
-    tile(h('span', h('b', { style: { color: BASE_C } }, softBase), ' vs ', h('b', { style: { color: DOC_C } }, softLife)), '소프트 랩 수 · 기존 추천 vs 문서 수명'),
-    tile(`+${Math.min(...dt).toFixed(1)}~${Math.max(...dt).toFixed(1)}`, '문서 수식 예상 시간 (초)'),
+    tile(h('span', h('b', { style: { color: BASE_C } }, softBase), ' vs ', h('b', { style: { color: DOC_C } }, softLife)), '소프트 랩 수 · 빅데이터 수식 추천 vs 수학 수식 수명'),
+    tile(`+${Math.min(...dt).toFixed(1)}~${Math.max(...dt).toFixed(1)}`, '수학 수식 예상 시간 (초)'),
     over != null ? tile(`${over}%`, `2026 실제 소프트 중 ${softLife}랩 넘김`) : null);
 }
 
@@ -131,19 +131,19 @@ function degCharts(rows) {
         s('text', { x: L - 6, y: y(v) + 4, class: 'g-tick', 'text-anchor': 'end' }, `${v}`));
     }
     for (let a = 0; a <= maxAge; a += 10) g.append(s('text', { x: x(a), y: H - 8, class: 'g-tick', 'text-anchor': 'middle' }, `${a}`));
-    // 문서 수명 이후 구간은 문서 모드에서 탈 수 없다 — 음영
-    g.append(s('rect', { x: x(life), y: T, width: x(maxAge) - x(life), height: H - T - B, class: 'g-ban', 'data-tip': `문서 수식: ${life}랩 넘는 스틴트 금지` }));
+    // 수학 수식 수명 이후 구간은 수학 수식 모드에서 탈 수 없다 — 음영
+    g.append(s('rect', { x: x(life), y: T, width: x(maxAge) - x(life), height: H - T - B, class: 'g-ban', 'data-tip': `수학 수식: ${life}랩 넘는 스틴트 금지` }));
     const pts = (fn, from) => { const p = []; for (let a = from; a <= maxAge; a++) p.push(`${x(a).toFixed(1)},${y(fn(a)).toFixed(1)}`); return p.join(' '); };
     g.append(
       s('polyline', { points: pts((a) => degradation(c, a, ctx), 2), fill: 'none', stroke: BASE_C, 'stroke-width': 2, 'stroke-dasharray': '5 4' }),
       s('polyline', { points: pts((a) => docDegradation(P, c, a, 1), 1), fill: 'none', stroke: DOC_C, 'stroke-width': 2 }),
       s('line', { x1: x(life), x2: x(life), y1: T, y2: H - B, stroke: DOC_C, 'stroke-width': 2 }),
       s('text', { x: x(life) + 4, y: T + 12, class: 'g-lab', fill: 'currentColor' }, `수명 ${life}`));
-    // 히트 영역 — 나이마다 두 모델 값을 보여 준다
+    // 히트 영역 — 나이마다 두 수식 값을 보여 준다
     for (let a = 1; a <= maxAge; a++) {
       g.append(s('rect', {
         x: x(a - 0.5), y: T, width: x(1) - x(0), height: H - T - B, fill: 'transparent',
-        'data-tip': `${COMPOUND_KO[c]} ${a}랩 — 기존 ${a >= 2 ? degradation(c, a, ctx).toFixed(2) : '—'}초 · 문서 ${docDegradation(P, c, a, 1).toFixed(2)}초`,
+        'data-tip': `${COMPOUND_KO[c]} ${a}랩 — 빅데이터 수식 ${a >= 2 ? degradation(c, a, ctx).toFixed(2) : '—'}초 · 수학 수식 ${docDegradation(P, c, a, 1).toFixed(2)}초`,
       }));
     }
     return h('figure.cmp-fig',
@@ -152,7 +152,7 @@ function degCharts(rows) {
   }));
 }
 
-/* ---------------- 2. 한 세트로 몇 랩 — 실제 분포 + 두 모델 ---------------- */
+/* ---------------- 2. 한 세트로 몇 랩 — 실제 분포 + 두 수식 ---------------- */
 function stintCharts(rows, real) {
   const W = 300, H = 170, L = 10, R = 10, T = 26, B = 26;
   const maxLap = 50, bin = 1;
@@ -187,7 +187,7 @@ function stintCharts(rows, real) {
       s('line', { x1: x(n), x2: x(n), y1: T - 4, y2: H - B, stroke: col, 'stroke-width': 2, 'stroke-dasharray': dash || null }),
       s('text', { x: x(n), y: row, class: 'g-lab', 'text-anchor': 'middle', fill: col }, label),
     ];
-    g.append(...[marker(bMed, BASE_C, `기존 ${bMed}`, 10, '5 4'), marker(dMed, DOC_C, `문서 ${dMed}`, 22)].flat().filter(Boolean));
+    g.append(...[marker(bMed, BASE_C, `빅데이터 ${bMed}`, 10, '5 4'), marker(dMed, DOC_C, `수학 ${dMed}`, 22)].flat().filter(Boolean));
     return h('figure.cmp-fig',
       h('figcaption', h('i.cmp-dot', { style: { background: COMPOUND_COLOR[c] } }), COMPOUND_KO[c],
         h('span.cmp-fig-note', `실제 ${v.length}개 중 ${over}%가 ${life}랩 넘김`)),
@@ -201,13 +201,13 @@ function stintBar(plan, total, model) {
     plan.stints.map((st) => h('span.cmp-seg', {
       class: `c-${st.compound}`,
       style: { flexGrow: st.laps, flexBasis: 0 },
-      'data-tip': `${model === 'base' ? '기존' : '문서'} · ${COMPOUND_KO[st.compound]} ${st.laps}랩`,
+      'data-tip': `${model === 'base' ? '빅데이터 수식' : '수학 수식'} · ${COMPOUND_KO[st.compound]} ${st.laps}랩`,
     }, st.laps / total > 0.12 ? `${SHORT[st.compound]}${st.laps}` : '')));
 }
 function ganttChart(rows) {
   return h('div.cmp-gantt',
     h('div.cmp-gantt-head', h('span', ''),
-      h('span', h('i.cmp-key.base'), '위 기존', h('i.cmp-key.doc', { style: { marginLeft: '16px' } }), '아래 문서'),
+      h('span', h('i.cmp-key.base'), '위 빅데이터 수식', h('i.cmp-key.doc', { style: { marginLeft: '16px' } }), '아래 수학 수식'),
       h('span', '스톱')),
     rows.map((r) => {
       const ds = r.doc.stints.length - r.base.stints.length;
@@ -227,9 +227,9 @@ function stopsBar(rows) {
   const seg = (n, cls, label) => n ? h('div.cmp-sseg', { class: cls, style: { flexGrow: n }, 'data-tip': `${label}: ${n}개 서킷` },
     h('b', n), h('span', label)) : null;
   return h('div.cmp-stops',
-    seg(more, 'more', '문서가 더 많이'),
+    seg(more, 'more', '수학 수식이 더 많이'),
     seg(same, 'same', '같음'),
-    seg(less, 'less', '문서가 더 적게'));
+    seg(less, 'less', '수학 수식이 더 적게'));
 }
 
 /* ---------------- 5. 예상 시간 차 — 가로 막대 ---------------- */
@@ -288,7 +288,7 @@ function dataTable(rows) {
   return h('details.fold.cmp-table',
     h('summary', '표로 보기'),
     h('div.fold-body', h('div.dt-wrap', h('table.dt',
-      h('thead', h('tr', h('th', '서킷'), h('th', '기존'), h('th', '문서'), h('th', '시간 차 (초)'), h('th', '타이어 온도'))),
+      h('thead', h('tr', h('th', '서킷'), h('th', '빅데이터 수식'), h('th', '수학 수식'), h('th', '시간 차 (초)'), h('th', '타이어 온도'))),
       h('tbody', rows.map((r) => h('tr',
         h('td', r.name), h('td', lab(r.base)), h('td', lab(r.doc)),
         h('td', `+${(r.docTime - r.baseTime).toFixed(1)}`), h('td', `${r.tyreT.toFixed(0)}°C`))))))));
@@ -309,18 +309,18 @@ async function main() {
 
   mount(root,
     heroTiles(rows, real),
-    section('01', '타이어가 느려지는 모양', '점선 기존 · 실선 문서 · 음영 = 문서에서 금지', degCharts(rows),
+    section('01', '타이어가 느려지는 모양', '점선 빅데이터 수식 · 실선 수학 수식 · 음영 = 수학 수식에서 금지', degCharts(rows),
       h('p.cmp-axis', '가로 타이어 나이(랩) · 세로 손실(초)')),
-    section('02', '한 세트로 몇 랩?', '막대 = 2026 실제 스틴트 · 빨간 막대 = 문서 수명 넘김', stintCharts(rows, real)),
+    section('02', '한 세트로 몇 랩?', '막대 = 2026 실제 스틴트 · 빨간 막대 = 수학 수식 수명 넘김', stintCharts(rows, real)),
     section('03', '24개 서킷 추천 전략', null, ganttChart(rows)),
     section('04', '스톱 수', null, stopsBar(rows)),
-    section('05', '예상 완주 시간 차', '문서 − 기존 (초) · 빗금 = 온도 보정', timeChart(rows)),
+    section('05', '예상 완주 시간 차', '수학 수식 − 빅데이터 수식 (초) · 빗금 = 온도 보정', timeChart(rows)),
     section('06', '온도 보정', '모든 타이어에 같게 붙음 → 전략 순위는 그대로', tempChart(rows)),
     h('section.cmp-sec.cmp-sum',
       h('h2', h('span.n', '='), '차이의 원인'),
       h('div.cmp-cause',
-        h('div', h('b', { style: { color: BASE_C } }, '기존'), h('span', '클리프 넘겨도 됨 · 손실 최대 3초')),
-        h('div', h('b', { style: { color: DOC_C } }, '문서'), h('span', '클리프(τ) = 수명 · 넘기면 금지')))),
+        h('div', h('b', { style: { color: BASE_C } }, '빅데이터 수식'), h('span', '클리프 넘겨도 됨 · 손실 최대 3초')),
+        h('div', h('b', { style: { color: DOC_C } }, '수학 수식'), h('span', '클리프(τ) = 수명 · 넘기면 금지')))),
     dataTable(rows));
 }
 

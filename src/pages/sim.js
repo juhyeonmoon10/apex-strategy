@@ -59,7 +59,7 @@ function getWindows(sc) {
   return windowsCache.windows;
 }
 
-/** 두 모델 비교 — 탐색을 두 번 돌리므로 조건이 같으면 다시 계산하지 않는다 */
+/** 두 수식 비교 — 탐색을 두 번 돌리므로 조건이 같으면 다시 계산하지 않는다 */
 let compareCache = { key: null, value: null };
 function getCompare(sc) {
   const key = `${scenarioSeed()}|${JSON.stringify(state.docOverrides)}|${state.raceKey}|${sc.circuit.laps}`;
@@ -209,7 +209,7 @@ function renderStepper() {
 }
 
 function contextLine(sc) {
-  return `${sc.circuit.track} · ${sc.team.name} / ${sc.driver.name} · ${sc.weather.trackTemp}°C · ${{ dry: '건조', rain: '비', heavy: '폭우' }[sc.weather.surface]}${sc.model === 'doc' ? ' · 조사 문서 수식' : ''}`;
+  return `${sc.circuit.track} · ${sc.team.name} / ${sc.driver.name} · ${sc.weather.trackTemp}°C · ${{ dry: '건조', rain: '비', heavy: '폭우' }[sc.weather.surface]}${sc.model === 'doc' ? ' · 수학 수식' : ''}`;
 }
 
 /** 실제 경기로 전환/해제. 서킷·랩 수·노면 온도를 그 경기 값으로 맞춘다. */
@@ -299,7 +299,7 @@ function renderStep1(root, sc) {
         : h('div.mode-body', h('span.mode-note', '서킷과 날씨를 직접 정하고, 세이프티카는 확률로 발생시킵니다')),
     ),
 
-    // 랩타임을 어떤 식으로 계산할지 — 기존 모델 / 조사 문서 수식
+    // 랩타임을 어떤 식으로 계산할지 — 빅데이터 수식 / 수학 수식
     renderModelCard({
       model: sc.model, doc: sc.doc, overrides: state.docOverrides,
       onModel: (m) => set({ model: m }, 'scenario'),
@@ -373,11 +373,11 @@ function renderStep2(root, sc) {
       h('div.fold-body', h('div#builder'))),
 
     sc.model === 'doc' ? h('details.fold', { open: 'true' },
-      h('summary', '조사 문서 수식으로 본 타이어', h('span.hint', 'F1 수명 · F3·F4 온도 · F2 열화 곡선')),
+      h('summary', '수학 수식으로 본 타이어', h('span.hint', 'F1 수명 · F3·F4 온도 · F2 열화 곡선')),
       h('div.fold-body', h('div#docPanel'))) : null,
 
     h('details.fold', { open: sc.model === 'doc' ? 'true' : null },
-      h('summary', '두 모델 비교', h('span.hint', '기존 모델 추천과 문서 수식 추천을 서로의 식으로 다시 계산')),
+      h('summary', '두 수식 비교', h('span.hint', `두 수식이 고른 전략을 ${sc.model === 'doc' ? '수학 수식' : '빅데이터 수식'}으로 계산`)),
       h('div.fold-body', h('div#modelCompare'))),
 
     h('div.sim-foot',
@@ -385,7 +385,7 @@ function renderStep2(root, sc) {
       h('button.btn.btn-primary', { type: 'button', onclick: () => goStep(3) }, '레이스 보기 →')));
 
   if ($('#docPanel')) renderDocPanel($('#docPanel'), sc);
-  renderCompare($('#modelCompare'), getCompare(sc));
+  renderCompare($('#modelCompare'), getCompare(sc), sc.model);
 
   // 피렐리식 전략 보드. 윈도우는 피트 랩을 ±5 옮겨 시뮬레이션해 실제로 계산 (시나리오당 1회 캐시)
   renderStrategyBoard($('#board'), {
