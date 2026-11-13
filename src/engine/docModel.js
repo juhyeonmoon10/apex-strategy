@@ -1,7 +1,7 @@
-// 조사 문서 수식 모델.
+// 수학 수식.
 //
 // 자료 조사 문서 「자료 조사(빅데이터, 텔레메트리, 기초 F1 타이어 정보)」의 수식을
-// 그대로 옮긴다. 기존 모델(degradation.js·lapTime.js)은 지우지 않고, 시나리오의
+// 그대로 옮긴다. 빅데이터 수식(degradation.js·lapTime.js)은 지우지 않고, 시나리오의
 // model === 'doc' 일 때만 이 파일의 식이 마모·컴파운드·온도 항을 대신한다.
 //
 //   F1  실제 스틴트 = min( √(2·T_pit / k₁) , a_cliff , h₀ / Δh_lap )      타이어 수명
@@ -39,7 +39,7 @@ export function docParams(overrides) {
 
 /**
  * 타이어 나이 a 에서의 열화 손실 (초). β₀ 는 랩타임 기준이라 여기서는 0.
- * @param {number} mult  서킷·팀·드라이버 마모 배수 (문서 밖 요소, 기존 모델과 같게)
+ * @param {number} mult  서킷·팀·드라이버 마모 배수 (조사 문서 밖 요소, 빅데이터 수식과 같게)
  */
 export function docDegradation(P, compound, age, mult = 1) {
   const t = P.tyre[compound] || P.tyre.MEDIUM;
@@ -55,7 +55,7 @@ export function docCompoundTerm(P, compound, mediumLap) {
   return mediumLap * (t.kc - 1);
 }
 
-/** 문서의 계산법 그대로: 대표 랩타임의 비 */
+/** 조사 문서의 계산법 그대로: 대표 랩타임의 비 */
 export const compoundCoefficient = (tc, tm) => tc / tm;
 
 /* ---------------- F3 · F4 — 온도 ---------------- */
@@ -69,7 +69,7 @@ export function tyreTemperature(P, trackTemp, airTemp, v) {
   return k.p * trackTemp + k.q * airTemp + k.b * v * v + k.c;
 }
 
-/** F3 를 문서에 적힌 모양 그대로: T_track = (T_tire − q·T_air − b·v² − c) / p */
+/** F3 를 조사 문서에 적힌 모양 그대로: T_track = (T_tire − q·T_air − b·v² − c) / p */
 export function trackTemperatureFrom(P, tyreTemp, airTemp, v) {
   const k = P.tyreTemp;
   return (tyreTemp - k.q * airTemp - k.b * v * v - k.c) / k.p;
@@ -115,7 +115,7 @@ export function stintLife(P, compound, circuit, pitLoss, mult = 1) {
 /** F1 세 항의 한국어 이름 — 수명을 정한 항을 화면·설명 문장에 쓸 때 */
 export const LIFE_TERM_KO = { econ: '경제적 스틴트', cliff: '클리프', tread: '트레드 소진' };
 
-/** 서킷·팀·드라이버 마모 배수 — 기존 모델과 같은 곱 (문서 밖 요소) */
+/** 서킷·팀·드라이버 마모 배수 — 빅데이터 수식과 같은 곱 (조사 문서 밖 요소) */
 export const wearMultiplier = (scenario) =>
   scenario.circuit.degMultiplier * scenario.team.degMultiplier * scenario.driver.mgmt;
 
@@ -130,7 +130,7 @@ export function stintLives(scenario, compounds = ['SOFT', 'MEDIUM', 'HARD']) {
 }
 
 /**
- * 문서 모델 한 랩의 타이어 관련 항. lapTime.js 가 기존 항 대신 쓴다.
+ * 수학 수식 한 랩의 타이어 관련 항. lapTime.js 가 기존 항 대신 쓴다.
  * @returns {{comp:number, deg:number, temp:number, tyreTemp:number}}
  */
 export function docLapTerms(ctx, mediumLap, mult, flagMult) {

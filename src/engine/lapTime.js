@@ -22,11 +22,11 @@ export function lapTime(ctx) {
   const car = team.pace;
   const drv = driver.pace;
 
-  // 타이어 항 — 모델에 따라 다르게 계산한다. 나머지 항은 두 모델이 같다.
+  // 타이어 항 — 모델에 따라 다르게 계산한다. 나머지 항은 두 수식이 같다.
   let comp, deg, temp = 0, tyreTemp = null;
   if (ctx.model === 'doc') {
-    // 조사 문서 수식: F5 컴파운드 계수 × 미디엄 기준, F2 꺾은선 열화, F3·F4 온도 보정.
-    // 기존 모델의 워밍업·노면온도 마모 증가는 F4 와 겹치므로 쓰지 않는다 (문서 5-4 "중복 금지").
+    // 수학 수식: F5 컴파운드 계수 × 미디엄 기준, F2 꺾은선 열화, F3·F4 온도 보정.
+    // 빅데이터 수식의 워밍업·노면온도 마모 증가는 F4 와 겹치므로 쓰지 않는다 (조사 문서 5-4 "중복 금지").
     const surfaceF = (SURFACE_WEAR[surface] && SURFACE_WEAR[surface][compound]) || 1;
     const mult = circuit.degMultiplier * team.degMultiplier * driver.mgmt * surfaceF;
     const d = docLapTerms(ctx, base + car + drv, mult, lapMultiplier(scStatus));

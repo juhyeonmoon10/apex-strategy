@@ -1,11 +1,11 @@
-// 두 모델 비교 — 기존 모델과 조사 문서 수식이 각각 고른 전략을 서로의 식으로 다시 계산한다.
+// 두 수식 비교 — 빅데이터 수식과 수학 수식이 각각 고른 전략을 서로의 식으로 다시 계산한다.
 //
 // "누가 더 빠른 전략을 골랐나"가 아니라 "같은 전략을 두 식이 어떻게 다르게 평가하나"를 보는 것이
 // 목적이다. 그래서 2×2 표를 만든다.
 //
-//                  기존 모델로 계산    문서 수식으로 계산
-//   기존 모델 추천        A                 B (+ 문서 수명 초과 여부)
-//   문서 수식 추천        C                 D
+//                  빅데이터 수식으로 계산    수학 수식으로 계산
+//   빅데이터 수식 추천        A                 B (+ 수학 수식 수명 초과 여부)
+//   수학 수식 추천        C                 D
 //
 // DOM 을 참조하지 않는다.
 
@@ -34,7 +34,7 @@ export function compareModels(scenario, seed, timeline) {
   const B = evalPlan(pickB);
   const D = evalPlan(pickD);
   const same = !!(pickB && pickD) && JSON.stringify(pickB.stints) === JSON.stringify(pickD.stints);
-  // 차이 설명에 쓰는 문서 F1 수명 — 두 추천에 나온 컴파운드 전부
+  // 차이 설명에 쓰는 수학 수식 F1 수명 — 두 추천에 나온 컴파운드 전부
   const used = new Set(['SOFT', 'MEDIUM', 'HARD']);
   [pickB, pickD].forEach((p) => p && p.stints.forEach((s) => used.add(s.compound)));
   const lives = stintLives(doc, [...used]);

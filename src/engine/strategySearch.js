@@ -56,7 +56,7 @@ function generateCandidates(scenario) {
         });
       }
 
-      // 문서 모델: 균등 분할은 대부분 수명 상한(F1)을 넘는다. 컴파운드별 수명에 비례해
+      // 수학 수식: 균등 분할은 대부분 수명 상한(F1)을 넘는다. 컴파운드별 수명에 비례해
       // 랩을 나눈 후보를 더해 "각 타이어를 수명만큼 쓰는" 전략도 탐색되게 한다.
       if (lives) {
         const caps = combo.map((c) => (lives[c] ? lives[c].limit : totalLaps));

@@ -71,7 +71,7 @@ export function explainPlan(scenario, plan, res, allPlans, allRes) {
     });
   }
 
-  // 4·5) 문서 수식 모드 — 클리프·노면 온도 대신 수명(F1)과 타이어 온도(F3·F4)로 설명한다
+  // 4·5) 수학 수식 모드 — 클리프·노면 온도 대신 수명(F1)과 타이어 온도(F3·F4)로 설명한다
   if (isDoc) out.push(...explainDoc(scenario, plan));
 
   // 4) 클리프 — 스틴트가 한계를 넘었나
@@ -88,7 +88,7 @@ export function explainPlan(scenario, plan, res, allPlans, allRes) {
     }
   });
 
-  // 5) 노면 온도와 마모의 관계 — 문서 모드는 explainDoc 의 타이어 온도 문장이 대신한다
+  // 5) 노면 온도와 마모의 관계 — 수학 수식 모드는 explainDoc 의 타이어 온도 문장이 대신한다
   const hottest = plan.stints.reduce((a, s) =>
     TYRE[s.compound].idealTemp < TYRE[a.compound].idealTemp ? s : a, plan.stints[0]);
   const excess = isDoc ? 0 : weather.trackTemp - TYRE[hottest.compound].idealTemp;
@@ -136,7 +136,7 @@ export function explainPlan(scenario, plan, res, allPlans, allRes) {
   return out;
 }
 
-/** 문서 수식 모드의 근거 문장 — 수명에 가장 가까운 스틴트와 타이어 온도 */
+/** 수학 수식 모드의 근거 문장 — 수명에 가장 가까운 스틴트와 타이어 온도 */
 function explainDoc(scenario, plan) {
   const out = [];
   const P = scenario.doc || docParams();
@@ -156,7 +156,7 @@ function explainDoc(scenario, plan) {
     out.push({
       tag: '타이어 수명',
       text:
-        `문서 F1 로 계산한 ${COMPOUND_KO[s.compound]} 수명은 ${L.limit}랩이고, ${LIFE_TERM_KO[L.binding]} 항이 가장 짧습니다. ` +
+        `수학 수식 F1 로 계산한 ${COMPOUND_KO[s.compound]} 수명은 ${L.limit}랩이고, ${LIFE_TERM_KO[L.binding]} 항이 가장 짧습니다. ` +
         `${i + 1}스틴트 ${s.laps}랩은 ` +
         (left <= 0 ? '수명을 끝까지 씁니다.' : `수명까지 ${left}랩을 남깁니다.`) +
         (L.binding === 'cliff' ? ` ${L.limit}랩을 넘기면 열화 기울기가 랩당 ${(P.tyre[s.compound].b2).toFixed(2)}초 더 가팔라집니다.` : ''),
@@ -184,7 +184,7 @@ function freshTyreGain(plan, scenario, firstPitLap) {
   const newC = plan.stints[1] ? plan.stints[1].compound : oldC;
   const age = plan.stints[0].laps;
   if (scenario.model === 'doc') {
-    // 문서 수식: 헌 타이어 F2 열화 − 새 타이어 F2 열화 + F5 컴파운드 차이
+    // 수학 수식: 헌 타이어 F2 열화 − 새 타이어 F2 열화 + F5 컴파운드 차이
     const P = scenario.doc || docParams();
     const mult = wearMultiplier(scenario);
     const medLap = scenario.circuit.baseLap + scenario.team.pace + scenario.driver.pace;

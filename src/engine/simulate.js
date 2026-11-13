@@ -58,7 +58,7 @@ export function simulate(scenario, plan, seed, sharedTimeline, retireLap) {
   let cumulative = gridLoss(grid);
   let pitTime = 0;
   let degTime = 0;
-  let tempTime = 0;     // 문서 모델의 F4 온도 보정 누적 (기존 모델은 0)
+  let tempTime = 0;     // 수학 수식의 F4 온도 보정 누적 (빅데이터 수식은 0)
 
   const stopAt = retireLap && retireLap >= 1 && retireLap <= totalLaps ? retireLap : null;
 

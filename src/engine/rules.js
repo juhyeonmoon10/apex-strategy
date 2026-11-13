@@ -29,7 +29,7 @@ export function validatePlan(plan, scenario) {
     }
   }
 
-  // 조사 문서 수식 모델: F1 "실제 스틴트 = min(√(2·T_pit/k₁), a_cliff, h₀/Δh_lap)" 를 수명 상한으로 쓴다
+  // 수학 수식: F1 "실제 스틴트 = min(√(2·T_pit/k₁), a_cliff, h₀/Δh_lap)" 를 수명 상한으로 쓴다
   const lives = scenario.model === 'doc' ? stintLives(scenario, [...new Set(stints.map((s) => s.compound))]) : null;
   const TERM_KO = { econ: '경제적 스틴트 √(2·T_pit/k₁)', cliff: '클리프 a_cliff', tread: '트레드 소진 h₀/Δh_lap' };
 
@@ -39,7 +39,7 @@ export function validatePlan(plan, scenario) {
     }
     if (lives && lives[s.compound] && s.laps > lives[s.compound].limit) {
       const L = lives[s.compound];
-      errors.push(`${i + 1}스틴트: ${COMPOUND_KO[s.compound]} ${s.laps}랩 — 문서 공식 수명 ${L.limit}랩(${TERM_KO[L.binding]})을 넘습니다.`);
+      errors.push(`${i + 1}스틴트: ${COMPOUND_KO[s.compound]} ${s.laps}랩 — 수학 수식 수명 ${L.limit}랩(${TERM_KO[L.binding]})을 넘습니다.`);
     }
     const cliff = lives ? scenario.doc.tyre[s.compound].tau : TYRE[s.compound].cliffLap;
     if (!lives && s.laps > cliff + 6) {
