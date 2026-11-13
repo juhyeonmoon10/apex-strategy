@@ -228,6 +228,12 @@ export function renderDocPanel(root, sc) {
 
 const FORMULA_KO = { base: '빅데이터 수식', doc: '수학 수식' };
 
+/** 완주 시간을 0.01초까지 — 1:15:27.43. 반올림은 0.01초 단위로 한 번만 해서 59.996 → 60.00 같은 자리 넘침을 막는다 */
+function fmtRaceTimeCs(sec) {
+  const cs = Math.round(sec * 100);
+  return `${fmtRaceTime(Math.floor(cs / 100))}.${String(cs % 100).padStart(2, '0')}`;
+}
+
 /**
  * 두 수식이 각자 고른 전략을, 사용자가 1단계에서 고른 계산 수식(model)으로만 계산해 비교한다.
  * @param {'base'|'doc'} model  1단계 "계산 수식"에서 고른 쪽
@@ -313,7 +319,7 @@ export function renderCompare(root, cmp, model = 'base') {
     return h('div.mc-row',
       h('div.mc-row-lab', `${NAME}으로 계산`),
       h('div.mc-row-val',
-        h('span.mc-time', ok ? fmtRaceTime(res.total) : '—'),
+        h('span.mc-time', ok ? fmtRaceTimeCs(res.total) : '—'),
         delta,
         check && !check.legal ? h('span.doc-viol', m === 'doc' ? '수명 초과' : '조건 위반') : null));
   };
