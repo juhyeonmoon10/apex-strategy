@@ -1,7 +1,7 @@
-// 조사 문서 수식 — 화면 조각.
-//   renderModelCard   1단계: 기존 모델 / 조사 문서 수식 선택 + 계수 표
-//   renderDocPanel    2단계: F1 타이어 수명 표 · F3/F4 타이어 온도 · F2 열화 곡선(두 모델 겹쳐 보기)
-//   renderCompare     2단계: 두 모델이 고른 전략을 서로의 식으로 다시 계산한 2×2 표
+// 수학 수식 — 화면 조각.
+//   renderModelCard   1단계: 빅데이터 수식 / 수학 수식 선택 + 계수 표
+//   renderDocPanel    2단계: F1 타이어 수명 표 · F3/F4 타이어 온도 · F2 열화 곡선(두 수식 겹쳐 보기)
+//   renderCompare     2단계: 두 수식이 고른 전략을 1단계에서 고른 계산 수식으로만 계산해 비교
 
 import { h, mount } from './dom.js';
 import { COMPOUND_KO, COMPOUND_COLOR, DOC_MODEL } from '../engine/params.js';
@@ -30,7 +30,7 @@ const fmt = (v, d = 3) => {
   return t;
 };
 
-/* ======================= 1단계 — 모델 선택 + 계수 ======================= */
+/* ======================= 1단계 — 수식 선택 + 계수 ======================= */
 
 /**
  * @param {{model:string, doc:object, overrides:object, onModel:(m)=>void, onOverrides:(o)=>void}} o
@@ -81,10 +81,10 @@ export function renderModelCard(o) {
   const changed = o.overrides && Object.keys(o.overrides).length > 0;
 
   return h('div.card.mode-card.doc-card',
-    h('div.field', h('label', '계산 모델'),
-      h('div.seg', { role: 'group', 'aria-label': '계산 모델' },
-        h('button', { type: 'button', 'aria-pressed': String(!isDoc), onclick: () => o.onModel('base') }, '기존 모델'),
-        h('button', { type: 'button', 'aria-pressed': String(isDoc), onclick: () => o.onModel('doc') }, '조사 문서 수식'))),
+    h('div.field', h('label', '계산 수식'),
+      h('div.seg', { role: 'group', 'aria-label': '계산 수식' },
+        h('button', { type: 'button', 'aria-pressed': String(!isDoc), onclick: () => o.onModel('base') }, '빅데이터 수식'),
+        h('button', { type: 'button', 'aria-pressed': String(isDoc), onclick: () => o.onModel('doc') }, '수학 수식'))),
     isDoc
       ? h('div.mode-body',
         h('ul.doc-formulas',
@@ -94,8 +94,8 @@ export function renderModelCard(o) {
           h('li', h('b', 'F4 온도 보정'), ' Δt = a(T_min − T)² · 0 · b(T − T_max)²'),
           h('li', h('b', 'F5 컴파운드 계수'), ' 예상 랩타임 = 미디엄 기준 × k_c'),
           h('li', h('b', 'F6 주행거리 마모'), ' Δh_lap = k · D_track · (km 당 마모)')),
-        h('p.mode-note', '문서가 다루지 않는 연료·트랙 진화·팀/드라이버 페이스·비·트래픽·깃발은 기존 모델 것을 그대로 씁니다. '
-          + '기존 모델의 워밍업과 노면 온도에 따른 마모 증가는 F4 와 겹치므로 이 모드에서는 빼고 계산합니다.'),
+        h('p.mode-note', '조사 문서가 다루지 않는 연료·트랙 진화·팀/드라이버 페이스·비·트래픽·깃발은 빅데이터 수식의 값을 그대로 씁니다. '
+          + '빅데이터 수식의 워밍업과 노면 온도에 따른 마모 증가는 F4 와 겹치므로 이 모드에서는 빼고 계산합니다.'),
         h('details.doc-coef',
           h('summary', '계수 보기·고치기', changed ? h('span.doc-changed', '수정됨') : null),
           h('div.doc-table-wrap',
@@ -118,20 +118,20 @@ export function renderModelCard(o) {
             h('button.btn.btn-ghost.btn-sm', { type: 'button', onclick: fillMeasured }, '실측값 넣기 (k₁ · k_c)'),
             h('button.btn.btn-ghost.btn-sm', { type: 'button', onclick: () => o.onOverrides({}) }, '기본값으로')),
           h('p.mode-note',
-            `기본값 출처 — k₁: 실측 랩 ${DOC_MEASURED.laps.toLocaleString('ko-KR')}개에서 문서 방법(스틴트 회귀)으로 계산. `
-            + 'τ: 실측에서 클리프가 검출되지 않아(팀이 클리프 전에 피트인) 기존 모델 값. β₂: 기존 모델 클리프 곡률을 10랩 평균 기울기로 환산. '
-            + 'k_c·마모계수·h₀·온도 범위·a·b: 문서 예시값. p·q·b·c: 문서에 값이 없어 프로젝트 가정.'),
+            `기본값 출처 — k₁: 실측 랩 ${DOC_MEASURED.laps.toLocaleString('ko-KR')}개에서 조사 문서 방법(스틴트 회귀)으로 계산. `
+            + 'τ: 실측에서 클리프가 검출되지 않아(팀이 클리프 전에 피트인) 빅데이터 수식 값. β₂: 빅데이터 수식 클리프 곡률을 10랩 평균 기울기로 환산. '
+            + 'k_c·마모계수·h₀·온도 범위·a·b: 조사 문서 예시값. p·q·b·c: 조사 문서에 값이 없어 프로젝트 가정.'),
           h('p.mode-note',
             `실측 k_c 는 소프트 ${fmt(DOC_MEASURED.compounds.SOFT.kc, 4)}, 하드 ${fmt(DOC_MEASURED.compounds.HARD.kc, 4)} 로 하드가 미디엄보다 빠르게 나옵니다. `
-            + '하드는 경기 후반 고무가 깔린 트랙에서 주로 달리기 때문에 생기는 착시입니다. 그래서 기본값은 문서 예시를 씁니다.')))
+            + '하드는 경기 후반 고무가 깔린 트랙에서 주로 달리기 때문에 생기는 착시입니다. 그래서 기본값은 조사 문서 예시를 씁니다.')))
       : h('div.mode-body', h('span.mode-note',
-        '마모 = 선형 + 클리프 이후 제곱(최대 3초), 컴파운드 차이는 고정 초, 노면 온도가 높으면 마모가 빨라지는 모델입니다. '
-        + '조사 문서 수식으로 바꾸면 같은 조건을 문서 식으로 다시 계산합니다.')));
+        '마모 = 선형 + 클리프 이후 제곱(최대 3초), 컴파운드 차이는 고정 초, 노면 온도가 높으면 마모가 빨라지는 빅데이터 수식입니다. '
+        + '수학 수식으로 바꾸면 같은 조건을 조사 문서의 F1–F6 식으로 다시 계산합니다.')));
 }
 
-/* ======================= 2단계 — 문서 수식 패널 ======================= */
+/* ======================= 2단계 — 수학 수식 패널 ======================= */
 
-/** 열화 곡선: 기존 모델(점선) vs 문서 F2(실선), 문서 수명 F1 표시 */
+/** 열화 곡선: 빅데이터 수식(점선) vs 수학 수식 F2(실선), 수학 수식 수명 F1 표시 */
 function degChart(sc, lives) {
   const W = 640, H = 220, L = 44, R = 14, T = 14, B = 30;
   const maxAge = 40, maxY = 4;
@@ -144,7 +144,7 @@ function degChart(sc, lives) {
     circuitDeg: sc.circuit.degMultiplier, teamDeg: sc.team.degMultiplier, driverMgmt: sc.driver.mgmt,
   };
 
-  const g = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'doc-chart', role: 'img', 'aria-label': '타이어 나이별 열화 손실 — 기존 모델과 문서 수식' });
+  const g = s('svg', { viewBox: `0 0 ${W} ${H}`, class: 'doc-chart', role: 'img', 'aria-label': '타이어 나이별 열화 손실 — 빅데이터 수식과 수학 수식' });
   for (let v = 0; v <= maxY; v++) {
     g.append(s('line', { x1: L, x2: W - R, y1: y(v), y2: y(v), class: 'dc-grid' }),
       s('text', { x: L - 6, y: y(v) + 4, class: 'dc-tick', 'text-anchor': 'end' }, `${v}초`));
@@ -158,7 +158,7 @@ function degChart(sc, lives) {
     const col = c === 'HARD' ? '#e9ebee' : COMPOUND_COLOR[c];
     const ptsBase = [], ptsDoc = [];
     for (let a = 1; a <= maxAge; a++) {
-      // 기존 모델 1랩째의 워밍업 튐은 곡선 모양을 가려서 2랩부터 그린다
+      // 빅데이터 수식 1랩째의 워밍업 튐은 곡선 모양을 가려서 2랩부터 그린다
       if (a >= 2) ptsBase.push(`${x(a).toFixed(1)},${y(degradation(c, a, ctx)).toFixed(1)}`);
       ptsDoc.push(`${x(a).toFixed(1)},${y(docDegradation(P, c, a, mult)).toFixed(1)}`);
     }
@@ -185,7 +185,7 @@ export function renderDocPanel(root, sc) {
   const inWin = Tt >= P.temp.tMin && Tt <= P.temp.tMax;
 
   mount(root,
-    h('p.doc-lead', '타이어 수명은 세 값 중 가장 짧은 것이 이깁니다 (F1). 문서 수식 모드에서는 이 수명을 넘는 스틴트가 있는 전략을 후보에서 뺍니다.'),
+    h('p.doc-lead', '타이어 수명은 세 값 중 가장 짧은 것이 이깁니다 (F1). 수학 수식 모드에서는 이 수명을 넘는 스틴트가 있는 전략을 후보에서 뺍니다.'),
     h('div.doc-table-wrap',
       h('table.doc-table.doc-life',
         h('thead', h('tr',
@@ -216,39 +216,55 @@ export function renderDocPanel(root, sc) {
         : ` — 적정 범위 ${P.temp.tMin}~${P.temp.tMax}°C 를 벗어나 랩당 `,
       inWin ? null : h('b', `+${pen.toFixed(3)}초`)),
     h('p.mode-note', `v 는 서킷 평균 속도(트랙 길이 ÷ 기준 랩타임)를 코너링 속도 대신 씁니다. 깃발 구간에는 속도가 줄어 타이어가 식습니다. `
-      + '문서 기본값은 컴파운드마다 같은 적정 범위를 쓰므로, 이 항은 모든 전략에 같은 시간을 더하고 순위는 바꾸지 않습니다.'),
+      + '수학 수식 기본값은 컴파운드마다 같은 적정 범위를 쓰므로, 이 항은 모든 전략에 같은 시간을 더하고 순위는 바꾸지 않습니다.'),
 
-    h('h4.doc-h', '열화 곡선 — 기존 모델(점선)과 문서 F2(실선)'),
+    h('h4.doc-h', '열화 곡선 — 빅데이터 수식(점선)과 수학 수식 F2(실선)'),
     h('div.doc-chart-wrap', degChart(sc, lives)),
-    h('p.mode-note', '기존 모델은 클리프 이후 제곱으로 늘다가 3초에서 멈추고, 문서 F2 는 τ 이후 기울기가 β₂ 만큼 꺾여 직선으로 늘어납니다. '
-      + '세로 막대는 문서 F1 의 수명입니다.'));
+    h('p.mode-note', '빅데이터 수식은 클리프 이후 제곱으로 늘다가 3초에서 멈추고, 수학 수식 F2 는 τ 이후 기울기가 β₂ 만큼 꺾여 직선으로 늘어납니다. '
+      + '세로 막대는 수학 수식 F1 의 수명입니다.'));
 }
 
-/* ======================= 2단계 — 두 모델 비교 ======================= */
+/* ======================= 2단계 — 두 수식 비교 ======================= */
 
-export function renderCompare(root, cmp) {
+const FORMULA_KO = { base: '빅데이터 수식', doc: '수학 수식' };
+
+/**
+ * 두 수식이 각자 고른 전략을, 사용자가 1단계에서 고른 계산 수식(model)으로만 계산해 비교한다.
+ * @param {'base'|'doc'} model  1단계 "계산 수식"에서 고른 쪽
+ */
+export function renderCompare(root, cmp, model = 'base') {
   if (!cmp || !cmp.B || !cmp.D) {
-    mount(root, h('p.empty', '이 조건에서는 두 모델 중 하나가 조건을 만족하는 전략을 찾지 못했습니다.'));
+    mount(root, h('p.empty', '이 조건에서는 두 수식 중 하나가 조건을 만족하는 전략을 찾지 못했습니다.'));
     return;
   }
-  const bb = cmp.B.base.total, bd = cmp.B.doc.total, db = cmp.D.base.total, dd = cmp.D.doc.total;
-  // 어느 쪽이 빠른지 부호를 보고 문장을 고른다. last 면 문장을 끝맺는다.
-  const faster = (tB, tD, last) => {
+  const m = model === 'doc' ? 'doc' : 'base';
+  const NAME = FORMULA_KO[m];
+  // 고른 수식으로 계산한 두 추천의 시간 (B = 빅데이터 수식 추천, D = 수학 수식 추천)
+  const tB = cmp.B[m].total, tD = cmp.D[m].total;
+  // 고른 수식의 규칙(수명 등)에 걸리는지 — 자기 추천은 항상 통과하므로 상대 추천만 본다
+  const checkB = m === 'doc' ? cmp.B.underDoc : null;
+  const checkD = m === 'base' ? cmp.D.underBase : null;
+
+  const whoFaster = () => {
     const d = tD - tB;
-    if (Math.abs(d) < 0.05) return last ? '두 추천의 시간이 같습니다' : '두 추천의 시간이 같고';
-    const who = d > 0 ? '기존' : '문서';
-    return `${who} 추천이 ${Math.abs(d).toFixed(1)}초 ${last ? '빠릅니다' : '빠르고'}`;
+    if (Math.abs(d) < 0.05) return '두 추천의 시간이 같음';
+    return `${d > 0 ? '빅데이터 수식' : '수학 수식'} 추천이 ${Math.abs(d).toFixed(1)}초 빠름`;
   };
+
   const notes = [];
   if (cmp.same) {
-    notes.push('두 모델이 같은 전략을 골랐습니다. 식이 달라도 이 조건에서는 결론이 같습니다.');
+    notes.push('두 수식이 같은 전략을 골랐습니다. 식이 달라도 이 조건에서는 결론이 같습니다.');
   } else {
-    notes.push(`기존 모델로 계산하면 ${faster(bb, db, false)}, 문서 수식으로 계산하면 ${faster(bd, dd, true)}.`);
+    const d = tD - tB;
+    notes.push(Math.abs(d) < 0.05
+      ? `${NAME}으로 계산하면 두 추천의 시간이 같습니다.`
+      : `${NAME}으로 계산하면 ${d > 0 ? '빅데이터 수식' : '수학 수식'} 추천이 ${Math.abs(d).toFixed(1)}초 빠릅니다.`);
   }
-  const violD = !cmp.D.underBase.legal ? cmp.D.underBase.errors[0] : null;
-  if (violD) notes.push(`문서 추천은 기존 모델의 조건에 걸립니다 — ${violD}`);
+  const viol = (checkB && !checkB.legal) ? `빅데이터 수식 추천은 ${NAME}의 조건에 걸립니다 — ${checkB.errors[0]}`
+    : (checkD && !checkD.legal) ? `수학 수식 추천은 ${NAME}의 조건에 걸립니다 — ${checkD.errors[0]}` : null;
+  if (viol) notes.push(viol);
 
-  // 왜 다른가 — 수명을 넘는 스틴트, 스톱 수, 클리프 처리, 온도 보정 순으로
+  // 왜 다른가 — 두 수식이 다른 전략을 고른 이유. 시간 이야기는 고른 수식 기준으로만 한다.
   const why = [];
   if (!cmp.same) {
     const over = cmp.B.plan.stints
@@ -257,24 +273,25 @@ export function renderCompare(root, cmp) {
     if (over.length) {
       const stints = over.map((x) => `${x.i + 1}스틴트 ${COMPOUND_KO[x.st.compound]} ${x.st.laps}랩`).join(', ');
       const limits = [...new Set(over.map((x) => `${COMPOUND_KO[x.st.compound]} ${x.L.limit}랩 · ${TERM_KO[x.L.binding]}`))].join(', ');
-      why.push(`기존 추천의 ${stints}이 문서 F1 수명(${limits})을 넘습니다. 문서 수식은 이런 스틴트를 허용하지 않아 다른 전략을 고릅니다.`
-        + (bd < dd ? ' 랩타임만 보면 문서 식으로 계산해도 기존 추천이 더 빠릅니다.' : ''));
+      why.push(`빅데이터 수식 추천의 ${stints}이 수학 수식 F1 수명(${limits})을 넘습니다. 수학 수식은 이런 스틴트를 허용하지 않아 다른 전략을 고릅니다.`
+        + (m === 'doc' && tB < tD ? ' 랩타임만 보면 수학 수식으로 계산해도 빅데이터 수식 추천이 더 빠릅니다.' : ''));
     }
     const sb = cmp.B.plan.stints.length - 1, sd = cmp.D.plan.stints.length - 1;
     why.push(sb === sd
       ? `스톱 수는 ${sb}스톱으로 같고, 스틴트 길이와 컴파운드 배분이 다릅니다.`
       : `스톱 수가 ${sb}스톱에서 ${sd}스톱으로 ${sd > sb ? '늘었습니다. 짧아진 스틴트를 피트스톱 한 번으로 메웁니다' : '줄었습니다. 수명이 긴 컴파운드로 스틴트를 늘립니다'}.`);
     if (over.some((x) => x.L.binding === 'cliff')) {
-      why.push('기존 모델은 클리프 이후 손실이 3초에서 멈춰, 클리프를 넘겨 타도 손해가 작게 계산됩니다. '
-        + '문서 F1 에서는 클리프 τ 가 수명의 한 항이라 넘길 수 없습니다. 1단계 계수 표에서 τ 를 바꾸면 차이가 어떻게 변하는지 볼 수 있습니다.');
+      why.push('빅데이터 수식은 클리프 이후 손실이 3초에서 멈춰, 클리프를 넘겨 타도 손해가 작게 계산됩니다. '
+        + '수학 수식 F1 에서는 클리프 τ 가 수명의 한 항이라 넘길 수 없습니다. 1단계 계수 표에서 τ 를 바꾸면 차이가 어떻게 변하는지 볼 수 있습니다.');
     }
-    const tt = cmp.D.doc.tempTime;
-    why.push(tt > 0.05
-      ? `문서 수식의 시간에는 F4 온도 보정 ${tt.toFixed(1)}초가 들어 있습니다. 모든 전략에 같게 붙어 순위는 바꾸지 않습니다.`
-      : '이 조건에서 F4 온도 보정은 0초라, 시간 차이는 전부 마모·컴파운드 식과 전략 차이에서 나옵니다.');
+    if (m === 'doc') {
+      const tt = cmp.D.doc.tempTime;
+      why.push(tt > 0.05
+        ? `수학 수식의 시간에는 F4 온도 보정 ${tt.toFixed(1)}초가 들어 있습니다. 모든 전략에 같게 붙어 순위는 바꾸지 않습니다.`
+        : '이 조건에서 F4 온도 보정은 0초라, 시간 차이는 전부 마모·컴파운드 식과 전략 차이에서 나옵니다.');
+    }
   }
 
-  // 같은 식(기존/문서)으로 계산한 두 추천의 시간 차 — 카드 안 각 줄의 비교 기준
   const total = (plan) => plan.stints.reduce((a, st) => a + st.laps, 0);
   const bar = (plan) => {
     const n = total(plan);
@@ -285,42 +302,40 @@ export function renderCompare(root, cmp) {
       return h('span.mc-pit', { style: { left: `${(lap / n) * 100}%` } }, `피트 ${lap}랩`);
     }), h('span', `${n}랩`)));
   };
-  const timeRow = (label, res, other, check, isOwn) => {
+  // 한 줄 — 고른 수식으로 잰 완주 시간 + 다른 카드와의 차이
+  const timeRow = (res, other, check) => {
     const ok = res && !res.invalid;
     const d = ok && other && !other.invalid ? res.total - other.total : null;
     const delta = d == null ? null
       : Math.abs(d) < 0.05 ? h('span.mc-delta.tie', '같음')
       : d < 0 ? h('span.mc-delta.win', `${Math.abs(d).toFixed(1)}초 빠름`)
       : h('span.mc-delta.lose', `+${d.toFixed(1)}초`);
-    return h('div.mc-row', { class: isOwn ? 'own' : '' },
-      h('div.mc-row-lab', label, isOwn ? h('small', '자기 식') : null),
+    return h('div.mc-row',
+      h('div.mc-row-lab', `${NAME}으로 계산`),
       h('div.mc-row-val',
         h('span.mc-time', ok ? fmtRaceTime(res.total) : '—'),
         delta,
-        check && !check.legal ? h('span.doc-viol', '수명 초과') : null));
+        check && !check.legal ? h('span.doc-viol', m === 'doc' ? '수명 초과' : '조건 위반') : null));
   };
-  const card = (title, side, other, ownKey) => h('div.mc-card', { class: ownKey === 'base' ? 'is-base' : 'is-doc' },
-    h('div.mc-card-head', h('h4', title), h('span', `${side.plan.stints.length - 1}스톱`)),
+  const card = (key, side, other, check) => h('div.mc-card', { class: key === m ? 'is-own' : '' },
+    h('div.mc-card-head',
+      h('h4', `${FORMULA_KO[key]}의 추천`, key === m ? h('small.mc-own', '고른 수식') : null),
+      h('span', `${side.plan.stints.length - 1}스톱`)),
     bar(side.plan),
-    timeRow('기존 모델로 계산', side.base, other.base, ownKey === 'doc' ? side.underBase : null, ownKey === 'base'),
-    timeRow('문서 수식으로 계산', side.doc, other.doc, ownKey === 'base' ? side.underDoc : null, ownKey === 'doc'));
+    timeRow(side[m], other[m], check));
 
-  // 판정 — 식마다 어느 추천이 빠른지 한눈에
-  const verdict = (label, tB, tD) => {
-    const d = tD - tB;
-    const who = Math.abs(d) < 0.05 ? '두 추천 같음' : `${d > 0 ? '기존' : '문서'} 추천이 ${Math.abs(d).toFixed(1)}초 빠름`;
-    return h('div.mc-verdict', h('span', label), h('b', who));
-  };
+  const cardB = card('base', cmp.B, cmp.D, checkB);
+  const cardD = card('doc', cmp.D, cmp.B, checkD);
 
   mount(root,
-    cmp.same ? null : h('div.mc-verdicts', verdict('기존 모델로 계산하면', bb, db), verdict('문서 수식으로 계산하면', bd, dd)),
-    h('div.mc-cards',
-      card('기존 모델의 추천', cmp.B, cmp.D, 'base'),
-      card('조사 문서 수식의 추천', cmp.D, cmp.B, 'doc')),
+    cmp.same ? null : h('div.mc-verdicts.single',
+      h('div.mc-verdict', h('span', `${NAME}으로 계산하면`), h('b', whoFaster()))),
+    h('div.mc-cards', m === 'doc' ? [cardD, cardB] : [cardB, cardD]),
     h('ul.doc-notes', notes.map((n) => h('li', n))),
     why.length ? h('h4.doc-h', '왜 다른가') : null,
     why.length ? h('ul.doc-notes', why.map((n) => h('li', n))) : null,
-    h('p.mode-note', '같은 조건·같은 시드에서 깃발 없이 계산합니다. 각 시간 옆의 차이는 같은 식으로 계산한 다른 모델의 추천과 비교한 값이고, 테두리 줄은 각 모델이 자기 식으로 계산한 자기 추천입니다.'));
+    h('p.mode-note', `두 수식이 각자 고른 전략을 1단계에서 고른 ${NAME}으로만 계산합니다. 같은 조건·같은 시드, 깃발 없음. `
+      + '시간 옆의 차이는 다른 카드와 비교한 값입니다. 다른 수식으로 계산한 시간은 1단계에서 계산 수식을 바꾸면 볼 수 있습니다.'));
 }
 
 export { DOC_MODEL };
